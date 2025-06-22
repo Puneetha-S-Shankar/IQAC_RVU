@@ -29,7 +29,7 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
       <header className="header">
         <div className="logo-container">
           <img 
-            src="/logo192.png" 
+            src="/image.png" 
             alt="Logo" 
             className="logo"
           />
@@ -58,13 +58,13 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
       <main className="main-content">
         <div className="dashboard-header">
           <h1 className="dashboard-title">DASHBOARD</h1>
-          <p className="user-info">Welcome, {user?.username} ({user?.type})</p>
+          {/* <p className="user-info">Welcome, {user?.username} ({user?.type})</p> */}
         </div>
 
         <div className="dashboard-actions">
           <div className="action-card">
-            <div className="action-icon upload-icon">
-              📁
+            <div className="action-icon upload">
+              Upload Files
             </div>
             <button 
               onClick={() => setShowUpload(!showUpload)} 

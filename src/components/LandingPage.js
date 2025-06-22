@@ -8,7 +8,7 @@ const LandingPage = ({ onNavigate }) => {
       <header className="header">
         <div className="logo-container">
           <img 
-            src="/logo192.png" 
+            src="/image.png" 
             alt="Logo" 
             className="logo"
           />
@@ -37,7 +37,7 @@ const LandingPage = ({ onNavigate }) => {
       </header>
 
       {/* Main Content */}
-      <main className="main-content">
+      {/* <main className="main-content">
         <div className="content-overlay">
           <h1 className="welcome-title">Welcome to Curriculum Portal</h1>
           
@@ -79,6 +79,15 @@ const LandingPage = ({ onNavigate }) => {
               LOGIN
             </button>
           </div>
+        </div>
+      </main> */}
+      <main classname='landing-main'>
+        <div class='IQAC'>
+          <h1>IQAC</h1>
+          
+        </div>
+        <div class='FullFormIQAC'>
+          <h2>Internal Quality Assurance Cell</h2>
         </div>
       </main>
     </div>

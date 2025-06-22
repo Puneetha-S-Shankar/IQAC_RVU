@@ -1,8 +1,11 @@
 import React from 'react';
-import LoginPage from './components/LoginPage.js'; // Note: match exact filename (case-sensitive)
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
 
-function App() {
-  return <LoginPage />;
-}
-
-export default App;
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

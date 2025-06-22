@@ -1,3 +1,14 @@
+.main-content {
+  background: #09193E;
+  display: flex;
+  min-height: 100vh;
+  content: none !important;
+  justify-content: center;
+  align-items: center;
+flex-direction: column; 
+}
+
+
 .dashboard-container {
   width: 100vw;
   height: 100vh;
@@ -6,11 +17,11 @@
   position: relative;
 }
 
-.dashboard-header {
+/* .dashboard-header {
   text-align: center;
   padding: 60px 0;
   background: linear-gradient(rgba(13, 14, 17, 0.95), rgba(13, 14, 17, 0.95));
-}
+} */
 
 .dashboard-title {
   color: white;
@@ -18,20 +29,24 @@
   font-family: 'Inria Serif', serif;
   font-weight: 400;
   margin-bottom: 20px;
+  text-align: center;
+   margin-bottom: 60px; 
+
 }
 
-.user-info {
+/* .user-info {
   color: #D49917;
   font-size: 24px;
   font-family: 'Inria Serif', serif;
   font-weight: 400;
-}
+} */
 
 .dashboard-actions {
   display: flex;
   justify-content: center;
-  gap: 200px;
+  gap: 150px;
   padding: 80px 0;
+  
 }
 
 .action-card {
@@ -40,12 +55,17 @@
   align-items: center;
   text-align: center;
 }
+.upload{
+  font-size: 20px;
+  color: #e74c3c;
+}
 
 .action-icon {
-  width: 389px;
-  height: 359px;
+  width: 200px;
+  height: 200px;
   background: linear-gradient(135deg, #D49917, #BB891C);
-  border-radius: 106px;
+  opacity: 0.5;
+  /* border-radius: 106px; */
   display: flex;
   align-items: center;
   justify-content: center;
