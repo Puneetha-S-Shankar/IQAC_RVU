@@ -1,0 +1,266 @@
+.dashboard-container {
+  width: 100vw;
+  height: 100vh;
+  background: #0D0E11;
+  overflow: hidden;
+  position: relative;
+}
+
+.dashboard-header {
+  text-align: center;
+  padding: 60px 0;
+  background: linear-gradient(rgba(13, 14, 17, 0.95), rgba(13, 14, 17, 0.95));
+}
+
+.dashboard-title {
+  color: white;
+  font-size: 96px;
+  font-family: 'Inria Serif', serif;
+  font-weight: 400;
+  margin-bottom: 20px;
+}
+
+.user-info {
+  color: #D49917;
+  font-size: 24px;
+  font-family: 'Inria Serif', serif;
+  font-weight: 400;
+}
+
+.dashboard-actions {
+  display: flex;
+  justify-content: center;
+  gap: 200px;
+  padding: 80px 0;
+}
+
+.action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.action-icon {
+  width: 389px;
+  height: 359px;
+  background: linear-gradient(135deg, #D49917, #BB891C);
+  border-radius: 106px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 120px;
+  margin-bottom: 30px;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.action-icon:hover {
+  transform: scale(1.05);
+}
+
+.action-button {
+  color: #BB891C;
+  font-size: 50px;
+  font-family: 'Inria Serif', serif;
+  font-weight: 400;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.action-button:hover {
+  color: #D49917;
+}
+
+/* Upload Section */
+.upload-section {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(14, 39, 97, 0.95);
+  padding: 40px;
+  border-radius: 20px;
+  border: 2px solid #D49917;
+  z-index: 1000;
+  min-width: 500px;
+}
+
+.upload-section h3 {
+  color: #D49917;
+  font-size: 32px;
+  font-family: 'Inria Serif', serif;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.upload-area {
+  border: 2px dashed #D49917;
+  border-radius: 10px;
+  padding: 60px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+  background: rgba(212, 153, 23, 0.1);
+}
+
+.file-input {
+  display: none;
+}
+
+.file-label {
+  color: #D49917;
+  font-size: 24px;
+  font-family: 'Inria Serif', serif;
+  cursor: pointer;
+  padding: 20px;
+  display: block;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.file-label:hover {
+  background: rgba(212, 153, 23, 0.2);
+}
+
+/* Files Section */
+.files-section {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(14, 39, 97, 0.95);
+  padding: 40px;
+  border-radius: 20px;
+  border: 2px solid #D49917;
+  z-index: 1000;
+  min-width: 600px;
+  max-width: 800px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.files-section h3 {
+  color: #D49917;
+  font-size: 32px;
+  font-family: 'Inria Serif', serif;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.no-files {
+  color: #BB891C;
+  font-size: 20px;
+  font-family: 'Inria Serif', serif;
+  text-align: center;
+  padding: 40px;
+}
+
+.files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(212, 153, 23, 0.1);
+  padding: 15px 20px;
+  border-radius: 10px;
+  border: 1px solid #D49917;
+  transition: all 0.3s ease;
+}
+
+.file-item:hover {
+  background: rgba(212, 153, 23, 0.2);
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.file-name {
+  color: #D49917;
+  font-size: 18px;
+  font-family: 'Inria Serif', serif;
+  font-weight: 600;
+}
+
+.file-details {
+  color: #BB891C;
+  font-size: 14px;
+  font-family: 'Inria Serif', serif;
+}
+
+.delete-button {
+  background: #e74c3c;
+  border: none;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.delete-button:hover {
+  background: #c0392b;
+  transform: scale(1.1);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dashboard-actions {
+    flex-direction: column;
+    gap: 50px;
+    align-items: center;
+  }
+  
+  .action-icon {
+    width: 250px;
+    height: 250px;
+    font-size: 80px;
+  }
+  
+  .action-button {
+    font-size: 36px;
+  }
+  
+  .dashboard-title {
+    font-size: 64px;
+  }
+}
+
+@media (max-width: 768px) {
+  .upload-section,
+  .files-section {
+    min-width: 90vw;
+    max-width: 90vw;
+  }
+  
+  .dashboard-title {
+    font-size: 48px;
+  }
+  
+  .action-icon {
+    width: 200px;
+    height: 200px;
+    font-size: 60px;
+  }
+  
+  .action-button {
+    font-size: 28px;
+  }
+}

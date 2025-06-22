@@ -1,0 +1,138 @@
+.landing-container {
+  width: 100vw;
+  height: 100vh;
+  background: white;
+  overflow: hidden;
+  position: relative;
+}
+
+.content-overlay {
+  position: absolute;
+  top: 180px;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 180px);
+  background: linear-gradient(rgba(7, 20, 50, 0.75), rgba(7, 20, 50, 0.75)),
+              url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 839"><rect width="1440" height="839" fill="%23141414" opacity="0.4"/></svg>');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.welcome-title {
+  font-size: 40px;
+  font-family: 'Inria Serif', serif;
+  font-weight: 400;
+  color: white;
+  text-align: center;
+  margin-bottom: 80px;
+  max-width: 675px;
+}
+
+.login-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 60px;
+}
+
+.login-prompt {
+  color: #D49917;
+  font-size: 30px;
+  font-family: 'Inria Serif', serif;
+  font-weight: 400;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.login-buttons {
+  display: flex;
+  gap: 100px;
+  margin-bottom: 40px;
+}
+
+.option-button {
+  width: 192px;
+  height: 71px;
+  background: #D49917;
+  border: none;
+  border-radius: 100px;
+  color: #09193E;
+  font-size: 26px;
+  font-family: 'Inria Serif', serif;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.option-button:hover {
+  background: #BB891C;
+  transform: translateY(-2px);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.form-divider {
+  width: 336px;
+  height: 1px;
+  background: white;
+  margin-bottom: 40px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 40px;
+}
+
+.form-label {
+  color: #D49917;
+  font-size: 26px;
+  font-family: 'Inria Serif', serif;
+  font-weight: 400;
+  margin-bottom: 20px;
+}
+
+.form-input {
+  width: 457px;
+  height: 1px;
+  background: #D49917;
+  border: none;
+  outline: none;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #D49917;
+}
+
+.form-input:focus {
+  border-bottom-color: #BB891C;
+}
+
+.submit-button {
+  width: 192px;
+  height: 71px;
+  background: #D49917;
+  border: none;
+  border-radius: 100px;
+  color: #09193E;
+  font-size: 26px;
+  font-family: 'Inria Serif', serif;
+  font-weight: 400;
+  cursor: pointer;
+  margin-top: 40px;
+  transition: all 0.3s ease;
+}
+
+.submit-button:hover {
+  background: #BB891C;
+  transform: translateY(-2px);
+}

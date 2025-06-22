@@ -1,0 +1,125 @@
+.login-page-container {
+  width: 100vw;
+  height: 100vh;
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 1024"><rect width="1440" height="1024" fill="%23141414"/></svg>');
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.login-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+}
+
+.user-type-buttons {
+  display: flex;
+  gap: 100px;
+  margin-bottom: 60px;
+}
+
+.option-button {
+  width: 192px;
+  height: 71px;
+  background: #D49917;
+  border: none;
+  border-radius: 100px;
+  color: #09193E;
+  font-size: 26px;
+  font-family: 'Inria Serif', serif;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0.7;
+}
+
+.option-button:hover {
+  background: #BB891C;
+  transform: translateY(-2px);
+  opacity: 1;
+}
+
+.option-button.active {
+  opacity: 1;
+  background: #BB891C;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.form-divider {
+  width: 336px;
+  height: 1px;
+  background: white;
+  margin-bottom: 50px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 50px;
+  width: 100%;
+  max-width: 457px;
+}
+
+.form-label {
+  color: #D49917;
+  font-size: 26px;
+  font-family: 'Inria Serif', serif;
+  font-weight: 400;
+  margin-bottom: 20px;
+}
+
+.form-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #D49917;
+  outline: none;
+  padding: 10px 0;
+  font-size: 20px;
+  color: white;
+  font-family: 'Inria Serif', serif;
+}
+
+.form-input:focus {
+  border-bottom-color: #BB891C;
+}
+
+.form-input::placeholder {
+  color: rgba(212, 153, 23, 0.5);
+}
+
+.submit-button {
+  width: 192px;
+  height: 71px;
+  background: #D49917;
+  border: none;
+  border-radius: 100px;
+  color: #09193E;
+  font-size: 26px;
+  font-family: 'Inria Serif', serif;
+  font-weight: 400;
+  cursor: pointer;
+  margin-top: 40px;
+  transition: all 0.3s ease;
+}
+
+.submit-button:hover {
+  background: #BB891C;
+  transform: translateY(-2px);
+}
+
+.submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

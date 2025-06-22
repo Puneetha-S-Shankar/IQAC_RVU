@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Login Page</title>
+    <link rel="stylesheet" href="LoginPage.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- React and Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!-- Your JSX -->
+    <script type="text/babel" src="LoginPage.jsx"></script>
+    <script type="text/babel">
+      ReactDOM.createRoot(document.getElementById('root')).render(<LoginPage />);
+    </script>
+  </body>
+</html>
