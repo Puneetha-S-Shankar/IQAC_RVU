@@ -1,0 +1,49 @@
+.programmes {
+  padding-top: 120px;
+  padding-left: 60px;
+  padding-right: 60px;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f0f4fa;
+  min-height: 100vh;
+}
+
+.programmes h1 {
+  font-size: 36px;
+  font-weight: bold;
+  margin-bottom: 40px;
+  color: #001f4d;
+  text-align: center;
+}
+
+.programme-list {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.programme-card {
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 16px;
+  width: 300px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  transition: 0.3s ease;
+  border-left: 5px solid #fcbf49;
+}
+
+.programme-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 25px rgba(0,0,0,0.2);
+}
+
+.programme-card h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: #001f4d;
+}
+
+.programme-card p {
+  font-size: 15px;
+  color: #333;
+}
