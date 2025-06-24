@@ -10,3 +10,23 @@ Currently, two official plugins are available:
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Backend Setup (Express + Mongoose)
+
+1. Navigate to the backend directory:
+   ```sh
+   cd server
+   ```
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
+3. Create a `.env` file in the `server` directory with the following content:
+   ```env
+   MONGO_URI=mongodb+srv://IamSamk:2gRB01wOhNhKIqvP@iqac.mlrfsfs.mongodb.net/?retryWrites=true&w=majority&appName=IQAC
+   PORT=5000
+   ```
+4. Start the backend server:
+   ```sh
+   npm start
+   ```
