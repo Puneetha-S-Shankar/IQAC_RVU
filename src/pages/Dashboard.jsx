@@ -2,12 +2,22 @@ import React, { useContext } from "react";
 import "./Dashboard.css";
 import { AuthContext } from "../context/AuthContext";
 
+const criteria = [
+  "curriculum development",
+  "teaching and learning,",
+  "Research",
+  "infrastructure and learning,",
+  "student support and progression",
+  "governance leadership and management",
+  "institutional values and best practices",
+];
+
 export default function Dashboard() {
   const { user } = useContext(AuthContext) || {};
   if (!user) return null;
 
   return (
-    <div className="dashboard">
+    <div className="dashboard" style={{ overflowX: "hidden", minHeight: "100vh", padding: 0 }}>
       {/* Top Row */}
       <div className="dashboard-top-row">
         <div className="dashboard-card">
@@ -25,44 +35,34 @@ export default function Dashboard() {
       </div>
 
       {/* Criteria Heading */}
-      <div className="dashboard-criteria-heading">Criteras</div>
+      <div className="dashboard-criteria-heading">Criteria</div>
 
-      {/* Criteria Grid - 4 cards */}
-      <div className="dashboard-criteria-grid">
-        <div className="criteria-card">
-          <button className="criteria-black-btn">CD</button>
-          <div className="criteria-label">curriculum development</div>
-        </div>
-        <div className="criteria-card">
-          <button className="criteria-black-btn"></button>
-          <div className="criteria-label">teaching and learning,</div>
-        </div>
-        <div className="criteria-card">
-          <button className="criteria-black-btn"></button>
-          <div className="criteria-label">Research</div>
-        </div>
-        <div className="criteria-card">
-          <button className="criteria-black-btn"></button>
-          <div className="criteria-label">infrastructure and learning,</div>
-        </div>
+      {/* Criteria Cards - flexbox layout */}
+      <div className="criteria-flex-row">
+        {criteria.slice(0, 4).map((label) => (
+          <div
+            key={label}
+            className="dashboard-card criteria-animated-btn"
+            style={{ minWidth: 260, minHeight: 180, margin: "0 1rem 2rem 1rem", padding: 0, border: "none", background: "#223b47", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}
+            tabIndex={0}
+          >
+            <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+            <div className="dashboard-card-title" style={{ marginTop: 0 }}>{label}</div>
+          </div>
+        ))}
       </div>
-      {/* Criteria Grid - 3 cards, styled like top cards */}
-      <div className="dashboard-criteria-grid bottom-row">
-        <div className="dashboard-card criteria-bottom-card">
-          <div className="dashboard-image-placeholder">{/* Image here */}</div>
-          <button className="criteria-black-btn"></button>
-          <div className="dashboard-card-title">student support and progression</div>
-        </div>
-        <div className="dashboard-card criteria-bottom-card">
-          <div className="dashboard-image-placeholder">{/* Image here */}</div>
-          <button className="criteria-black-btn"></button>
-          <div className="dashboard-card-title">governance leadership and management</div>
-        </div>
-        <div className="dashboard-card criteria-bottom-card">
-          <div className="dashboard-image-placeholder">{/* Image here */}</div>
-          <button className="criteria-black-btn"></button>
-          <div className="dashboard-card-title">institutional values and best practices</div>
-        </div>
+      <div className="criteria-flex-row criteria-flex-row-bottom">
+        {criteria.slice(4).map((label) => (
+          <div
+            key={label}
+            className="dashboard-card criteria-animated-btn"
+            style={{ minWidth: 260, minHeight: 180, margin: "0 1rem 2rem 1rem", padding: 0, border: "none", background: "#223b47", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}
+            tabIndex={0}
+          >
+            <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+            <div className="dashboard-card-title" style={{ marginTop: 0 }}>{label}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
