@@ -1,0 +1,106 @@
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Navbar styles */
+nav {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 2rem;
+  background-color: #001f4d;
+  color: white;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+}
+
+nav img {
+  height: 50px;
+  margin-right: 1rem;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+nav ul li a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+nav .login-btn {
+  background-color: #fcbf49;
+  color: #001f4d;
+  font-weight: bold;
+  padding: 0.4rem 1rem;
+  border-radius: 5px;
+  text-decoration: none;
+}
+
+/* Slideshow styles */
+.slideshow-container {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  margin-top: 70px; /* Prevents navbar overlap */
+}
+
+.slide-image {
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  display: block;
+}
+
+/* Overlay text on slideshow */
+.overlay-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #fcbf49;
+  z-index: 2;
+}
+
+.overlay-text h1 {
+  font-size: 5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.overlay-text p {
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+/* Section button on slideshow */
+.slide-nav {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background-color: #001f4d;
+  color: white;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  z-index: 3;
+}

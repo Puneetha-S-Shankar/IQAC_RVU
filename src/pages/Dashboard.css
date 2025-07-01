@@ -1,0 +1,74 @@
+.dashboard {
+  padding-top: 120px;
+  padding: 40px;
+  background-color: #f0f4fa;
+  min-height: 100vh;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.criteria-heading {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 30px;
+  color: #001f4d;
+}
+
+.criteria-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.criteria-button {
+  position: relative;
+  background-color: #001f4d;
+  color: white;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 8px;
+  min-width: 160px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.dropdown {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+  z-index: 10;
+  padding: 10px;
+  width: 180px;
+}
+
+.dropdown > div {
+  padding: 8px;
+  color: #001f4d;
+  cursor: pointer;
+}
+
+.dropdown > div:hover {
+  background-color: #f0f0f0;
+}
+
+.nested-dropdown {
+  margin-top: 10px;
+  background-color: #eef6ff;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+.nested-dropdown > div {
+  margin-bottom: 6px;
+  cursor: pointer;
+  color: #001f4d;
+}
+
+.nested-dropdown > div:hover {
+  background-color: #ddeeff;
+}
