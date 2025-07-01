@@ -2,12 +2,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
-<<<<<<< HEAD
-=======
 const multer = require('multer');
 const { MongoClient, GridFSBucket } = require('mongodb');
 const path = require('path');
->>>>>>> 7226f8fdb8c3381e63b5683512ae74c7108e34d8
 
 const app = express();
 app.use(cors());
@@ -20,8 +17,6 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log('MongoDB connected'))
 .catch((err) => console.error('MongoDB connection error:', err));
 
-<<<<<<< HEAD
-=======
 // Multer storage (memory)
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -34,7 +29,6 @@ mongoose.connection.once('open', () => {
   console.log('GridFSBucket set up');
 });
 
->>>>>>> 7226f8fdb8c3381e63b5683512ae74c7108e34d8
 app.get('/', (req, res) => {
   res.send('API is running');
 });
@@ -42,8 +36,6 @@ app.get('/', (req, res) => {
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
-<<<<<<< HEAD
-=======
 // File upload route
 app.post('/api/upload/:programme', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
@@ -95,7 +87,6 @@ app.get('/api/files/:id', async (req, res) => {
   }
 });
 
->>>>>>> 7226f8fdb8c3381e63b5683512ae74c7108e34d8
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
