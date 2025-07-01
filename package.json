@@ -13,10 +13,6 @@
     "mongoose": "^8.16.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-<<<<<<< HEAD
-=======
-    "react-dropzone": "^14.3.8",
->>>>>>> 7226f8fdb8c3381e63b5683512ae74c7108e34d8
     "react-router-dom": "^7.6.2"
   },
   "devDependencies": {
