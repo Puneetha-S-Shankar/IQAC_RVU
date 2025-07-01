@@ -45,6 +45,7 @@ const Navbar = () => {
         <Link to="/policy" style={linkStyle}>Policy</Link>
 <Link to="/template" style={linkStyle}>Template</Link>
 
+
       </div>
     </nav>
   );
