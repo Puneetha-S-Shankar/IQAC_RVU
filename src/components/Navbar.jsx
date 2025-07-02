@@ -36,7 +36,7 @@ const Navbar = () => {
         
         <Link to="/policy" style={linkStyle}>Policy</Link>
         <Link to="/template" style={linkStyle}>Template</Link>
-        <Link to="/about" style={linkStyle}>About</Link>
+        <Link to="/about" style={linkStyle}>About Us</Link>
         {!user && <Link to="/login" style={linkStyle}>Login</Link>}
       </div>
     </nav>

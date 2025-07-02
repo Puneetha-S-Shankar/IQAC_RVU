@@ -1,10 +1,44 @@
-// CurriculumDev.jsx
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import "./CurriculumDev.css";
+
 const CurriculumDev = () => {
+  const navigate = useNavigate();
+
   return (
-    <div>
-      <h2>Curriculum Development Page</h2>
-      <a href="/btech">Go to B.Tech Page</a>
+    <div className="curriculum-dev-container">
+      {/* Heading */}
+      <h1 className="curriculum-dev-main-heading">Curriculum Development</h1>
+
+      {/* About Section */}
+      <div className="curriculum-dev-about-section">
+        <h2 className="curriculum-dev-subheading">About curriculum development</h2>
+        <p className="curriculum-dev-about-text">
+          Curriculum development is a dynamic process that involves the design, implementation, and evaluation of educational programs. It ensures that the content, teaching methods, and assessments are aligned with the latest academic standards and industry requirements. Through continuous improvement, curriculum development aims to provide students with relevant knowledge, practical skills, and critical thinking abilities to succeed in their chosen fields. Collaboration among faculty, industry experts, and stakeholders is essential to create a curriculum that meets the evolving needs of society and prepares graduates for future challenges.
+        </p>
+      </div>
+
+      {/* UG & PG Columns */}
+      <div className="curriculum-dev-columns">
+        {/* UG Column */}
+        <div className="curriculum-dev-column">
+          <div className="curriculum-dev-image-placeholder">UG Image</div>
+          <div className="curriculum-dev-btn-group">
+            <button className="curriculum-dev-nav-btn" onClick={() => navigate("/btech")}>BTECH</button>
+            <button className="curriculum-dev-nav-btn" onClick={() => navigate("/Bca")}>BCA</button>
+            <button className="curriculum-dev-nav-btn" onClick={() => navigate("/Bsc")}>BSC</button>
+          </div>
+        </div>
+        {/* PG Column */}
+        <div className="curriculum-dev-column">
+          <div className="curriculum-dev-image-placeholder">PG Image</div>
+          <div className="curriculum-dev-btn-group">
+            <button className="curriculum-dev-nav-btn" onClick={() => navigate("/mtech")}>MTECH</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
+
 export default CurriculumDev;

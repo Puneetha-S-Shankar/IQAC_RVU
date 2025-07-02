@@ -4,13 +4,13 @@ import "./Dashboard.css";
 import { AuthContext } from "../context/AuthContext";
 
 const criteria = [
-  "curriculum development",
-  "teaching and learning,",
+  "Curriculum Development",
+  "Teaching and Learning",
   "Research",
-  "infrastructure and learning,",
-  "student support and progression",
-  "governance leadership and management",
-  "institutional values and best practices",
+  "Infrastructure and Learning",
+  "Student Support and Progression",
+  "Governance Leadership and Management",
+  "Institutional Values and Best Practices",
 ];
 
 export default function Dashboard() {

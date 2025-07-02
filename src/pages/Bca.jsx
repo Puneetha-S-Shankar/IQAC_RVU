@@ -1,12 +1,11 @@
-// src/pages/Btech.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 
-const Btech = () => {
+const Bca = () => {
   return (
     <div style={styles.container}>
-      <h1 style={{marginTop: '90px', ...styles.heading}}>B.Tech Program Page</h1>
-      <p style={styles.text}>This is a placeholder for the B.Tech program details.</p>
+      <h1 style={{marginTop: '90px', ...styles.heading}}>BCA Program Page</h1>
+      <p style={styles.text}>This is a placeholder for the Bca program details.</p>
 
       <div style={styles.navLinks}>
         <Link to="/dashboard" style={styles.link}>← Back to Dashboard</Link>
@@ -45,4 +44,4 @@ const styles = {
   },
 };
 
-export default Btech;
+export default Bca;

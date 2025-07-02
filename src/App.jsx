@@ -12,6 +12,9 @@ import Policy from './pages/Policy';
 import Template from './pages/Template';
 import CurriculumDev from "./pages/CurriculumDev";
 import Btech from "./pages/Btech";
+import Bca from "./pages/Bca";
+import Bsc from "./pages/Bsc";
+import Mtech from "./pages/Mtech";
 
 const App = () => {
   // const { user } = useContext(AuthContext) || {};
@@ -27,6 +30,9 @@ const App = () => {
         <Route path="/template" element={<Template />} />
         <Route path="/curriculum" element={<CurriculumDev />} />
         <Route path="/btech" element={<Btech />} />
+        <Route path="/bca" element={<Bca />} />
+        <Route path="/bsc" element={<Bsc />} />
+        <Route path="/mtech" element={<Mtech />} />
       </Routes>
     </Router>
   );

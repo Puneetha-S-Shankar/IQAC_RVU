@@ -1,0 +1,125 @@
+/* Main container */
+.curriculum-dev-container {
+  max-width: 100%;
+  margin: 40px auto;
+  padding: 32px 20px;
+  padding-top: 100px;
+  background: #182E37;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(24,46,55,0.10);
+  font-family: 'Segoe UI', sans-serif;
+  color: #fff;
+}
+
+/* Main heading */
+.curriculum-dev-main-heading {
+  font-size: 2.3rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 18px;
+  letter-spacing: 1px;
+  color: #D5AB5D;
+}
+
+/* About section */
+.curriculum-dev-about-section {
+  background: #223b47;
+  border-radius: 8px;
+  padding: 24px 28px 18px 28px;
+  margin-bottom: 36px;
+  box-shadow: 0 2px 8px rgba(24,46,55,0.08);
+}
+.curriculum-dev-subheading {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #D5AB5D;
+  margin-bottom: 10px;
+}
+.curriculum-dev-about-text {
+  font-size: 1.08rem;
+  color: #fff;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* Columns for UG and PG */
+.curriculum-dev-columns {
+  display: flex;
+  gap: 36px;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.curriculum-dev-column {
+  flex: 1 1 320px;
+  background: #223b47;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(24,46,55,0.08);
+  padding: 28px 18px 24px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 280px;
+  max-width: 400px;
+}
+
+/* Image placeholder */
+.curriculum-dev-image-placeholder {
+  width: 100%;
+  height: 140px;
+  background: #D5AB5D33;
+  border-radius: 8px;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #D5AB5D;
+  font-size: 1.2rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  box-shadow: 0 1px 4px rgba(24,46,55,0.08);
+}
+
+/* Button group */
+.curriculum-dev-btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Navigation buttons */
+.curriculum-dev-nav-btn {
+  background: #D5AB5D;
+  color: #182E37;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 0;
+  font-size: 1.08rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  box-shadow: 0 2px 8px rgba(213,171,93,0.18), 0 2px 8px rgba(24,46,55,0.10);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
+  width: 100%;
+}
+.curriculum-dev-nav-btn:hover, .curriculum-dev-nav-btn:focus {
+  background: #fff;
+  color: #223b47;
+  transform: scale(1.045);
+  box-shadow: 0 8px 32px rgba(213,171,93,0.18), 0 2px 8px rgba(24,46,55,0.10);
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .curriculum-dev-columns {
+    flex-direction: column;
+    gap: 28px;
+    align-items: stretch;
+  }
+  .curriculum-dev-column {
+    max-width: 100%;
+  }
+} 
