@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./CurriculumDev.css";
 
@@ -60,6 +60,8 @@ const ProgramPage = ({ aboutTexts }) => {
   const [uploadStatus, setUploadStatus] = useState("");
   const [viewedFile, setViewedFile] = useState(null);
   const [viewStatus, setViewStatus] = useState("");
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleDropdownSelect = (info) => {
     setDocInfo(info);
@@ -130,6 +132,30 @@ const ProgramPage = ({ aboutTexts }) => {
     }
   };
 
+  // Drag and drop handlers
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setSelectedFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleClickDropArea = () => {
+    fileInputRef.current.click();
+  };
+
   return (
     <div className="program-page-root curriculum-dev-container" style={{ display: "flex", gap: 32, minHeight: 600 }}>
       {/* Sidebar */}
@@ -155,10 +181,35 @@ const ProgramPage = ({ aboutTexts }) => {
           <div className="program-upload-card curriculum-dev-about-section">
             <h3>Upload Document</h3>
             <p>Year: {docInfo?.year}, Batch: {docInfo?.batch}{docInfo?.doc ? `, Document: ${docInfo.doc}` : ""}</p>
-            <label className="custom-file-label">
-              Choose File
-              <input type="file" onChange={handleFileChange} />
-            </label>
+            <div
+              className={`drag-drop-area${dragActive ? " drag-active" : ""}`}
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              onClick={handleClickDropArea}
+              style={{
+                border: dragActive ? "2px solid #D5AB5D" : "2px dashed #D5AB5D",
+                borderRadius: 8,
+                padding: 24,
+                textAlign: "center",
+                background: dragActive ? "#223b47" : "#223b4733",
+                cursor: "pointer",
+                marginBottom: 12
+              }}
+            >
+              {dragActive ? (
+                <span>Drop your file here...</span>
+              ) : (
+                <span>Drag & drop a file here, or click to select</span>
+              )}
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+              />
+            </div>
             <span className="file-name">{selectedFile ? selectedFile.name : "No file chosen"}</span>
             <button className="curriculum-dev-nav-btn" style={{ marginTop: 12 }} onClick={handleUpload}>Upload</button>
             {uploadStatus && <div style={{ marginTop: 8, color: uploadStatus.includes("success") ? "green" : "red" }}>{uploadStatus}</div>}
