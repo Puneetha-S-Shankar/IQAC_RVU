@@ -24,11 +24,12 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-        <img src={logo} alt="RVU Logo" style={{ height: "50px", marginRight: "18px" }} className="navbar-logo" />
+        <Link to="/">
+        <img src={logo} alt="RVU Logo" style={{ height: "50px", marginRight: "18px" }} className="navbar-logo" /></Link>
         <div style={{ fontSize: "1.4rem", fontWeight: "bold", color: "#FFD700" }}>IQAC Portal</div>
       </div>
       <div style={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
-        <Link to="/" style={linkStyle}>Home</Link>
+        {/* <Link to="/" style={linkStyle}>Home</Link> */}
         {!user && <Link to="/login" style={linkStyle}>Login</Link>}
         {user && <span onClick={handleLogout} style={{...linkStyle, cursor: "pointer"}}>Logout</span>}
         <Link to="/dashboard" style={linkStyle}>Dashboard</Link>
