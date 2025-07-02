@@ -25,3 +25,6 @@ dist-ssr
 
 # Ignore backend environment variables
 server/.env
+
+server/database.json
+server/uploads/
