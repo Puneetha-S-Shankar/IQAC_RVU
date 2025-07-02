@@ -27,15 +27,17 @@ const Navbar = () => {
         <Link to="/">
         <img src={logo} alt="RVU Logo" style={{ height: "50px", marginRight: "18px" }} className="navbar-logo" /></Link>
         <div style={{ fontSize: "1.4rem", fontWeight: "bold", color: "#FFD700" }}>IQAC Portal</div>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
         {/* <Link to="/" style={linkStyle}>Home</Link> */}
-        {!user && <Link to="/login" style={linkStyle}>Login</Link>}
+        
         {user && <span onClick={handleLogout} style={{...linkStyle, cursor: "pointer"}}>Logout</span>}
         <Link to="/dashboard" style={linkStyle}>Dashboard</Link>
-        <Link to="/about" style={linkStyle}>About</Link>
+        
         <Link to="/policy" style={linkStyle}>Policy</Link>
         <Link to="/template" style={linkStyle}>Template</Link>
+        <Link to="/about" style={linkStyle}>About</Link>
+        {!user && <Link to="/login" style={linkStyle}>Login</Link>}
       </div>
     </nav>
   );
