@@ -37,11 +37,50 @@
       "isActive": true
     }
   ],
-  "files": [],
+  "files": [
+    {
+      "_id": "da7dac84-9e69-4ad0-b34d-62a9fa715ccb",
+      "originalName": "Tech stack (1).pdf",
+      "filename": "file-1751457360642-921623676.pdf",
+      "mimetype": "application/pdf",
+      "size": 325575,
+      "uploadedBy": "admin",
+      "category": "general",
+      "description": "",
+      "tags": [],
+      "programme": "BTECH",
+      "docLevel": "course",
+      "year": "2024",
+      "batch": "1st year",
+      "semester": "1st year",
+      "docType": "Course analysis document",
+      "uploadedAt": "2025-07-02T11:56:00.664Z",
+      "filePath": "C:\\Users\\Samarth Kadam\\Documents\\IQAC\\IQAC_RVU\\server\\uploads\\file-1751457360642-921623676.pdf"
+    },
+    {
+      "_id": "6fcf5f31-0129-45bf-a0ac-10b0dae3ba59",
+      "originalName": "TECH_STACK.pdf",
+      "filename": "file-1751457646610-733638710.pdf",
+      "mimetype": "application/pdf",
+      "size": 34546,
+      "uploadedBy": "admin",
+      "category": "general",
+      "description": "",
+      "tags": [],
+      "programme": "BTECH",
+      "docLevel": "course",
+      "year": "2024",
+      "batch": "1st year",
+      "semester": "1st year",
+      "docType": "Course analysis document",
+      "uploadedAt": "2025-07-02T12:00:46.621Z",
+      "filePath": "C:\\Users\\Samarth Kadam\\Documents\\IQAC\\IQAC_RVU\\server\\uploads\\file-1751457646610-733638710.pdf"
+    }
+  ],
   "curriculum": [],
   "reports": [],
   "metadata": {
-    "lastUpdated": "2025-07-02T07:42:35.573Z",
+    "lastUpdated": "2025-07-02T12:00:46.621Z",
     "version": "1.0.0"
   }
 }

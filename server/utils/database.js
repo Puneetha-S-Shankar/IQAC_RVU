@@ -104,7 +104,7 @@ class Database {
 
   async findFile(query) {
     const db = await this.readDatabase();
-    return db.files.find(file => {
+    return db.files.filter(file => {
       return Object.keys(query).every(key => file[key] === query[key]);
     });
   }
