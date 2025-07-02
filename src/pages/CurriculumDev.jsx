@@ -5,6 +5,10 @@ import "./CurriculumDev.css";
 const CurriculumDev = () => {
   const navigate = useNavigate();
 
+  const handleProgramClick = (program) => {
+    navigate(`/program?name=${program}`);
+  };
+
   return (
     <div className="curriculum-dev-container">
       {/* Heading */}
@@ -24,16 +28,16 @@ const CurriculumDev = () => {
         <div className="curriculum-dev-column">
           <div className="curriculum-dev-image-placeholder">UG Image</div>
           <div className="curriculum-dev-btn-group">
-            <button className="curriculum-dev-nav-btn" onClick={() => navigate("/btech")}>BTECH</button>
-            <button className="curriculum-dev-nav-btn" onClick={() => navigate("/Bca")}>BCA</button>
-            <button className="curriculum-dev-nav-btn" onClick={() => navigate("/Bsc")}>BSC</button>
+            <button className="curriculum-dev-nav-btn" onClick={() => handleProgramClick("BTECH")}>BTECH</button>
+            <button className="curriculum-dev-nav-btn" onClick={() => handleProgramClick("BCA")}>BCA</button>
+            <button className="curriculum-dev-nav-btn" onClick={() => handleProgramClick("BSC")}>BSC</button>
           </div>
         </div>
         {/* PG Column */}
         <div className="curriculum-dev-column">
           <div className="curriculum-dev-image-placeholder">PG Image</div>
           <div className="curriculum-dev-btn-group">
-            <button className="curriculum-dev-nav-btn" onClick={() => navigate("/mtech")}>MTECH</button>
+            <button className="curriculum-dev-nav-btn" onClick={() => handleProgramClick("MTECH")}>MTECH</button>
           </div>
         </div>
       </div>

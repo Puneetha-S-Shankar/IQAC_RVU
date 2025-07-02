@@ -122,4 +122,102 @@
   .curriculum-dev-column {
     max-width: 100%;
   }
+}
+
+.program-nested-dropdown {
+  margin-bottom: 32px;
+  background: #223b47;
+  border-radius: 10px;
+  padding: 18px 16px 14px 16px;
+  box-shadow: 0 2px 8px rgba(24,46,55,0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.dropdown-label {
+  color: #D5AB5D;
+  font-size: 1.08rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.program-nested-dropdown select {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1.5px solid #D5AB5D;
+  background: #182E37;
+  color: #fff;
+  font-size: 1rem;
+  font-family: 'Segoe UI', sans-serif;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+.program-nested-dropdown select:focus {
+  border: 2px solid #D5AB5D;
+  box-shadow: 0 0 0 2px #D5AB5D33;
+}
+
+.dropdown-actions {
+  display: flex;
+  gap: 18px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.dropdown-actions button {
+  flex: 1 1 0;
+  background: #D5AB5D;
+  color: #182E37;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  box-shadow: 0 2px 8px rgba(213,171,93,0.18), 0 2px 8px rgba(24,46,55,0.10);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.dropdown-actions button:hover, .dropdown-actions button:focus {
+  background: #fff;
+  color: #223b47;
+  transform: scale(1.045);
+  box-shadow: 0 8px 32px rgba(213,171,93,0.18), 0 2px 8px rgba(24,46,55,0.10);
+  outline: none;
+}
+
+/* Custom file input styles for upload */
+.program-upload-card input[type="file"] {
+  display: none;
+}
+.program-upload-card .custom-file-label {
+  display: inline-block;
+  background: #D5AB5D;
+  color: #182E37;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  margin-right: 16px;
+  transition: background 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(213,171,93,0.18), 0 2px 8px rgba(24,46,55,0.10);
+}
+.program-upload-card .custom-file-label:hover, .program-upload-card .custom-file-label:focus {
+  background: #fff;
+  color: #223b47;
+  transform: scale(1.045);
+  box-shadow: 0 8px 32px rgba(213,171,93,0.18), 0 2px 8px rgba(24,46,55,0.10);
+  outline: none;
+}
+.program-upload-card .file-name {
+  color: #D5AB5D;
+  font-size: 1rem;
+  font-weight: 500;
+  vertical-align: middle;
 } 
