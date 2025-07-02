@@ -75,12 +75,31 @@
       "docType": "Course analysis document",
       "uploadedAt": "2025-07-02T12:00:46.621Z",
       "filePath": "C:\\Users\\Samarth Kadam\\Documents\\IQAC\\IQAC_RVU\\server\\uploads\\file-1751457646610-733638710.pdf"
+    },
+    {
+      "_id": "8c583d52-d5ad-4a2a-b315-510e888eb154",
+      "originalName": "Satellite_writeup(2).pdf",
+      "filename": "file-1751458732513-258986170.pdf",
+      "mimetype": "application/pdf",
+      "size": 1073428,
+      "uploadedBy": "admin",
+      "category": "general",
+      "description": "",
+      "tags": [],
+      "programme": "BTECH",
+      "docLevel": "course",
+      "year": "2023",
+      "batch": "1st year",
+      "semester": "1st year",
+      "docType": "Syllabus",
+      "uploadedAt": "2025-07-02T12:18:52.544Z",
+      "filePath": "C:\\Users\\Puneetha\\Desktop\\iqac\\IQAC_RVU\\server\\uploads\\file-1751458732513-258986170.pdf"
     }
   ],
   "curriculum": [],
   "reports": [],
   "metadata": {
-    "lastUpdated": "2025-07-02T12:00:46.621Z",
+    "lastUpdated": "2025-07-02T12:18:52.545Z",
     "version": "1.0.0"
   }
 }
