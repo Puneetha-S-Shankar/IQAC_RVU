@@ -56,10 +56,17 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       filename: req.file.filename,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      uploadedBy: req.body.userId || 'anonymous',
+      uploadedBy: req.body.uploadedBy || req.body.userId || 'anonymous',
       category: req.body.category || 'general',
       description: req.body.description || '',
-      tags: req.body.tags ? req.body.tags.split(',').map(tag => tag.trim()) : []
+      tags: req.body.tags ? req.body.tags.split(',').map(tag => tag.trim()) : [],
+      // New fields for academic document structure
+      programme: req.body.programme || '',
+      docLevel: req.body.docLevel || '', // 'course' or 'programme'
+      year: req.body.year || '',
+      batch: req.body.batch || '',
+      semester: req.body.semester || '',
+      docType: req.body.docType || ''
     };
 
     const savedFile = await database.saveFile(fileData);
@@ -76,6 +83,12 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         category: savedFile.category,
         description: savedFile.description,
         tags: savedFile.tags,
+        programme: savedFile.programme,
+        docLevel: savedFile.docLevel,
+        year: savedFile.year,
+        batch: savedFile.batch,
+        semester: savedFile.semester,
+        docType: savedFile.docType,
         uploadedAt: savedFile.uploadedAt
       }
     });
