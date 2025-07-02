@@ -1,93 +1,75 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config();
-const multer = require('multer');
-const { MongoClient, GridFSBucket } = require('mongodb');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
+
+// Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('MongoDB connected'))
-.catch((err) => console.error('MongoDB connection error:', err));
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Multer storage (memory)
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
-let gfsBucket;
-
-mongoose.connection.once('open', () => {
-  const db = mongoose.connection.db;
-  gfsBucket = new GridFSBucket(db, { bucketName: 'uploads' });
-  console.log('GridFSBucket set up');
-});
-
+// Basic route
 app.get('/', (req, res) => {
-  res.send('API is running');
+  res.json({ 
+    message: 'IQAC API is running',
+    version: '1.0.0',
+    database: 'JSON File System'
+  });
 });
 
+// Routes
 const authRoutes = require('./routes/auth');
+const fileRoutes = require('./routes/files');
+
 app.use('/api/auth', authRoutes);
+app.use('/api/files', fileRoutes);
 
-// File upload route
-app.post('/api/upload/:programme', upload.single('file'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  if (!gfsBucket) return res.status(500).json({ error: 'GridFS not initialized' });
-
-  const { programme } = req.params;
-  const filename = `${programme}_${Date.now()}_${req.file.originalname}`;
-
-  const uploadStream = gfsBucket.openUploadStream(filename, {
-    metadata: {
-      programme,
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      uploadDate: new Date(),
-    },
-  });
-
-  uploadStream.end(req.file.buffer);
-
-  uploadStream.on('finish', (file) => {
-    res.status(201).json({ message: 'File uploaded', file });
-  });
-
-  uploadStream.on('error', (err) => {
-    res.status(500).json({ error: 'Upload failed', details: err.message });
-  });
-});
-
-// List uploaded files
-app.get('/api/files', async (req, res) => {
-  if (!gfsBucket) return res.status(500).json({ error: 'GridFS not initialized' });
-  const files = await gfsBucket.find().toArray();
-  res.json(files);
-});
-
-// Download a file by id
-app.get('/api/files/:id', async (req, res) => {
-  if (!gfsBucket) return res.status(500).json({ error: 'GridFS not initialized' });
-  const { id } = req.params;
+// Database stats endpoint
+app.get('/api/stats', async (req, res) => {
   try {
-    const _id = new mongoose.Types.ObjectId(id);
-    const downloadStream = gfsBucket.openDownloadStream(_id);
-    downloadStream.on('error', () => res.status(404).json({ error: 'File not found' }));
-    res.set('Content-Type', 'application/octet-stream');
-    downloadStream.pipe(res);
-  } catch (err) {
-    res.status(400).json({ error: 'Invalid file id' });
+    const database = require('./utils/database');
+    const stats = await database.getStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Stats error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
+});
+
+// Backup endpoint
+app.post('/api/backup', async (req, res) => {
+  try {
+    const database = require('./utils/database');
+    const backupPath = await database.backup();
+    res.json({ 
+      message: 'Backup created successfully',
+      backupPath: path.basename(backupPath)
+    });
+  } catch (error) {
+    console.error('Backup error:', error);
+    res.status(500).json({ error: 'Server error during backup' });
+  }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Route not found' });
 });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Database: JSON File System`);
+  console.log(`Upload directory: ${path.join(__dirname, 'uploads')}`);
 }); 

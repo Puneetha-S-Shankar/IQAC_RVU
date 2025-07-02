@@ -1,0 +1,47 @@
+{
+  "users": [
+    {
+      "_id": "1",
+      "username": "admin",
+      "email": "admin@iqac.com",
+      "password": "admin123",
+      "role": "admin",
+      "firstName": "Admin",
+      "lastName": "User",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "lastLogin": "2025-07-02T07:39:36.767Z",
+      "isActive": true
+    },
+    {
+      "_id": "2",
+      "username": "user",
+      "email": "user@iqac.com",
+      "password": "user123",
+      "role": "user",
+      "firstName": "Regular",
+      "lastName": "User",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "lastLogin": "2024-01-01T00:00:00.000Z",
+      "isActive": true
+    },
+    {
+      "_id": "3",
+      "username": "viewer",
+      "email": "viewer@iqac.com",
+      "password": "viewer123",
+      "role": "viewer",
+      "firstName": "Viewer",
+      "lastName": "User",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "lastLogin": "2024-01-01T00:00:00.000Z",
+      "isActive": true
+    }
+  ],
+  "files": [],
+  "curriculum": [],
+  "reports": [],
+  "metadata": {
+    "lastUpdated": "2025-07-02T07:39:36.767Z",
+    "version": "1.0.0"
+  }
+}
