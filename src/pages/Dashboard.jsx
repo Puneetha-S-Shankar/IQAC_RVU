@@ -13,11 +13,11 @@ const criteria = [
 ];
 
 export default function Dashboard() {
-  const { user } = useContext(AuthContext) || {};
-  if (!user) return null;
+  // const { user } = useContext(AuthContext) || {};
+  // if (!user) return null;
 
   return (
-    <div className="dashboard" style={{ overflowX: "hidden", minHeight: "100vh", padding: 0 }}>
+    <div className="dashboard">
       {/* Top Row */}
       <div className="dashboard-top-row">
         <div className="dashboard-card">
@@ -43,7 +43,6 @@ export default function Dashboard() {
           <div
             key={label}
             className="dashboard-card criteria-animated-btn"
-            style={{ minWidth: 260, minHeight: 180, margin: "0 1rem 2rem 1rem", padding: 0, border: "none", background: "#223b47", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}
             tabIndex={0}
           >
             <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
@@ -56,7 +55,6 @@ export default function Dashboard() {
           <div
             key={label}
             className="dashboard-card criteria-animated-btn"
-            style={{ minWidth: 260, minHeight: 180, margin: "0 1rem 2rem 1rem", padding: 0, border: "none", background: "#223b47", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "flex-start" }}
             tabIndex={0}
           >
             <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>

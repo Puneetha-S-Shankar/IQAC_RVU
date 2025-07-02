@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/rvu-logo.png"; // Make sure the path is correct
-import { AuthContext } from "../context/AuthContext"; // Assumes you have an AuthContext
+import { AuthContext } from "../context/AuthContext";
 import "./Navbar.css";
 
 const Navbar = () => {
@@ -31,12 +31,10 @@ const Navbar = () => {
         <Link to="/" style={linkStyle}>Home</Link>
         {!user && <Link to="/login" style={linkStyle}>Login</Link>}
         {user && <span onClick={handleLogout} style={{...linkStyle, cursor: "pointer"}}>Logout</span>}
-        {user && <Link to="/dashboard" style={linkStyle}>Dashboard</Link>}
+        <Link to="/dashboard" style={linkStyle}>Dashboard</Link>
         <Link to="/about" style={linkStyle}>About</Link>
         <Link to="/policy" style={linkStyle}>Policy</Link>
-        {user && user.role === "admin" && (
-          <Link to="/template" style={linkStyle}>Template</Link>
-        )}
+        <Link to="/template" style={linkStyle}>Template</Link>
       </div>
     </nav>
   );
