@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import { AuthContext } from "../context/AuthContext";
 
@@ -13,8 +14,13 @@ const criteria = [
 ];
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   // const { user } = useContext(AuthContext) || {};
   // if (!user) return null;
+
+  const handleCurriculumClick = () => {
+    navigate("/curriculum");
+  };
 
   return (
     <div className="dashboard">
@@ -44,6 +50,8 @@ export default function Dashboard() {
             key={label}
             className="dashboard-card criteria-animated-btn"
             tabIndex={0}
+            onClick={label.toLowerCase().includes("curriculum") ? handleCurriculumClick : undefined}
+            style={{ cursor: label.toLowerCase().includes("curriculum") ? "pointer" : "default" }}
           >
             <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
             <div className="dashboard-card-title" style={{ marginTop: 0 }}>{label}</div>
@@ -56,6 +64,8 @@ export default function Dashboard() {
             key={label}
             className="dashboard-card criteria-animated-btn"
             tabIndex={0}
+            onClick={label.toLowerCase().includes("curriculum") ? handleCurriculumClick : undefined}
+            style={{ cursor: label.toLowerCase().includes("curriculum") ? "pointer" : "default" }}
           >
             <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
             <div className="dashboard-card-title" style={{ marginTop: 0 }}>{label}</div>
