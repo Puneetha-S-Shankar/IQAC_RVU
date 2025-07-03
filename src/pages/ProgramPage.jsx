@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./CurriculumDev.css";
 
@@ -57,6 +57,11 @@ const ProgramPage = ({ aboutTexts }) => {
   const [mainView, setMainView] = useState("about");
   const [docInfo, setDocInfo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [viewedFile, setViewedFile] = useState(null);
+  const [viewStatus, setViewStatus] = useState("");
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleDropdownSelect = (info) => {
     setDocInfo(info);
@@ -65,6 +70,90 @@ const ProgramPage = ({ aboutTexts }) => {
 
   const handleFileChange = (e) => {
     setSelectedFile(e.target.files[0]);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || !docInfo) {
+      setUploadStatus("Please select a file and document info.");
+      return;
+    }
+    setUploadStatus("");
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    formData.append("programme", programName);
+    formData.append("docLevel", docInfo.doc ? "course" : "programme");
+    formData.append("year", docInfo.year);
+    formData.append("batch", docInfo.batch);
+    formData.append("semester", docInfo.batch); // Assuming batch is like '1st year', can be mapped to semester if needed
+    formData.append("docType", docInfo.doc || "");
+    formData.append("uploadedBy", "admin"); // Replace with actual user if available
+
+    try {
+      const response = await fetch("http://localhost:5000/api/files/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setUploadStatus("File uploaded successfully!");
+      } else {
+        setUploadStatus(data.error || "Upload failed.");
+      }
+    } catch (err) {
+      setUploadStatus("Upload failed: " + err.message);
+    }
+  };
+
+  const handleView = async () => {
+    setViewStatus("");
+    setViewedFile(null);
+    if (!docInfo) {
+      setViewStatus("Please select document info.");
+      return;
+    }
+    const params = new URLSearchParams({
+      programme: programName,
+      docLevel: docInfo.doc ? "course" : "programme",
+      year: docInfo.year,
+      batch: docInfo.batch,
+      semester: docInfo.batch, // Assuming batch is like '1st year', can be mapped to semester if needed
+      docType: docInfo.doc || ""
+    });
+    try {
+      const response = await fetch(`http://localhost:5000/api/files?${params.toString()}`);
+      const data = await response.json();
+      if (response.ok && data.files && data.files.length > 0) {
+        setViewedFile(data.files[0]);
+      } else {
+        setViewStatus("No file found for this selection.");
+      }
+    } catch (err) {
+      setViewStatus("Failed to fetch file: " + err.message);
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setSelectedFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleClickDropArea = () => {
+    fileInputRef.current.click();
   };
 
   return (
@@ -92,21 +181,54 @@ const ProgramPage = ({ aboutTexts }) => {
           <div className="program-upload-card curriculum-dev-about-section">
             <h3>Upload Document</h3>
             <p>Year: {docInfo?.year}, Batch: {docInfo?.batch}{docInfo?.doc ? `, Document: ${docInfo.doc}` : ""}</p>
-            <label className="custom-file-label">
-              Choose File
-              <input type="file" onChange={handleFileChange} />
-            </label>
+            <div
+              className={`drag-drop-area${dragActive ? " drag-active" : ""}`}
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              onClick={handleClickDropArea}
+              style={{
+                border: dragActive ? "2px solid #D5AB5D" : "2px dashed #D5AB5D",
+                borderRadius: 8,
+                padding: 24,
+                textAlign: "center",
+                background: dragActive ? "#223b47" : "#223b4733",
+                cursor: "pointer",
+                marginBottom: 12
+              }}
+            >
+              {dragActive ? (
+                <span>Drop your file here...</span>
+              ) : (
+                <span>Drag & drop a file here, or click to select</span>
+              )}
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+              />
+            </div>
             <span className="file-name">{selectedFile ? selectedFile.name : "No file chosen"}</span>
-            <button className="curriculum-dev-nav-btn" style={{ marginTop: 12 }}>Upload</button>
+            <button className="curriculum-dev-nav-btn" style={{ marginTop: 12 }} onClick={handleUpload}>Upload</button>
+            {uploadStatus && <div style={{ marginTop: 8, color: uploadStatus.includes("success") ? "green" : "red" }}>{uploadStatus}</div>}
           </div>
         )}
         {mainView === "view" && (
           <div className="program-view-card curriculum-dev-about-section">
             <h3>View Document</h3>
             <p>Year: {docInfo?.year}, Batch: {docInfo?.batch}{docInfo?.doc ? `, Document: ${docInfo.doc}` : ""}</p>
-            <div style={{ height: 200, background: "#223b47", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "#D5AB5D" }}>
-              [Document preview here]
-            </div>
+            <button className="curriculum-dev-nav-btn" style={{ marginBottom: 12 }} onClick={handleView}>View File</button>
+            {viewedFile ? (
+              <div style={{ marginTop: 12 }}>
+                <a href={`http://localhost:5000/uploads/${viewedFile.filename}`} target="_blank" rel="noopener noreferrer" download>
+                  Download/View: {viewedFile.originalName}
+                </a>
+              </div>
+            ) : (
+              <div style={{ marginTop: 12, color: "#D5AB5D" }}>{viewStatus}</div>
+            )}
           </div>
         )}
         {mainView === "about" && (
