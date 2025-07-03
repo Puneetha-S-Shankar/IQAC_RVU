@@ -21,7 +21,6 @@ const aboutTexts = {
 };
 
 const App = () => {
-  // const { user } = useContext(AuthContext) || {};
   return (
     <Router>
       <Navbar />
