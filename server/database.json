@@ -9,7 +9,7 @@
       "firstName": "Admin",
       "lastName": "User",
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "lastLogin": "2025-07-02T07:42:35.571Z",
+      "lastLogin": "2025-07-07T14:56:22.405Z",
       "isActive": true
     },
     {
@@ -21,7 +21,7 @@
       "firstName": "Regular",
       "lastName": "User",
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "lastLogin": "2024-01-01T00:00:00.000Z",
+      "lastLogin": "2025-07-07T15:08:41.256Z",
       "isActive": true
     },
     {
@@ -33,7 +33,7 @@
       "firstName": "Viewer",
       "lastName": "User",
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "lastLogin": "2024-01-01T00:00:00.000Z",
+      "lastLogin": "2025-07-07T13:59:22.478Z",
       "isActive": true
     }
   ],
@@ -94,12 +94,29 @@
       "docType": "Syllabus",
       "uploadedAt": "2025-07-02T12:18:52.544Z",
       "filePath": "C:\\Users\\Puneetha\\Desktop\\iqac\\IQAC_RVU\\server\\uploads\\file-1751458732513-258986170.pdf"
+    },
+    {
+      "_id": "ecae9781-0d9e-40a8-8f17-abd5569b5768",
+      "originalName": "Pranav Prasanna Krishna.pdf",
+      "filename": "file-1751899382456-379797270.pdf",
+      "mimetype": "application/pdf",
+      "size": 84607,
+      "uploadedBy": "admin",
+      "category": "general",
+      "description": "",
+      "tags": [],
+      "programme": "BTECH",
+      "docLevel": "course",
+      "year": "2022",
+      "batch": "1st year",
+      "semester": "1st year",
+      "docType": "Syllabus",
+      "uploadedAt": "2025-07-07T14:43:02.472Z",
+      "filePath": "C:\\Users\\prana\\Cursor Projects\\IQAC_RVU-master\\IQAC_RVU\\server\\uploads\\file-1751899382456-379797270.pdf"
     }
   ],
-  "curriculum": [],
-  "reports": [],
   "metadata": {
-    "lastUpdated": "2025-07-02T12:18:52.545Z",
+    "lastUpdated": "2025-07-07T15:08:41.259Z",
     "version": "1.0.0"
   }
 }
