@@ -11,10 +11,8 @@ const CurriculumDev = () => {
 
   return (
     <div className="curriculum-dev-container">
-      {/* Heading */}
       <h1 className="curriculum-dev-main-heading">Curriculum Development</h1>
 
-      {/* About Section */}
       <div className="curriculum-dev-about-section">
         <h2 className="curriculum-dev-subheading">About curriculum development</h2>
         <p className="curriculum-dev-about-text">
@@ -22,9 +20,7 @@ const CurriculumDev = () => {
         </p>
       </div>
 
-      {/* UG & PG Columns */}
       <div className="curriculum-dev-columns">
-        {/* UG Column */}
         <div className="curriculum-dev-column">
           <div className="curriculum-dev-image-placeholder">UG Image</div>
           <div className="curriculum-dev-btn-group">
@@ -33,7 +29,6 @@ const CurriculumDev = () => {
             <button className="curriculum-dev-nav-btn" onClick={() => handleProgramClick("BSC")}>BSC</button>
           </div>
         </div>
-        {/* PG Column */}
         <div className="curriculum-dev-column">
           <div className="curriculum-dev-image-placeholder">PG Image</div>
           <div className="curriculum-dev-btn-group">

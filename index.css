@@ -1,0 +1,22 @@
+/* ✅ Font Import */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ✅ Universal Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+:root {
+  --main-bg: #182E37;
+  --primary-yellow: #D5AB5D;
+  --text-white: #ffffff;
+  --card-bg: #223b47;
+}
+
+body {
+  background-color: var(--main-bg);
+  color: var(--text-white);
+}

@@ -17,6 +17,11 @@ const Login = () => {
     e.preventDefault();
     await login(email, password);
   };
+<div className="login-fullscreen">
+  <div className="login-box">
+    {/* Your form elements here */}
+  </div>
+</div>
 
   return (
     <div className="login-fullscreen">

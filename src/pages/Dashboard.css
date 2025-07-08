@@ -37,9 +37,10 @@ html, body {
 
 .dashboard-card {
   background: #223b47;
-  border-radius: 16px;
   box-shadow: 0 4px 16px rgba(24,46,55,0.10);
   width: 280px;
+  border: 2px solid rgba(150, 130, 13, 0.3); /* soft yellow border */
+  border-radius: 0px;
   min-width: 220px;
   max-width: 320px;
   display: flex;
@@ -54,7 +55,8 @@ html, body {
   width: 100%;
   height: 110px;
   background: #D5AB5D33;
-  border-radius: 8px;
+  border: 2px solid rgba(148, 127, 9, 0.3); /* soft yellow border */
+  border-radius: 0px;
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
@@ -101,7 +103,7 @@ html, body {
 
 .criteria-card {
   background: #223b47;
-  border-radius: 14px;
+  
   box-shadow: 0 2px 8px rgba(24,46,55,0.08);
   width: 23%;
   min-width: 200px;
@@ -117,7 +119,7 @@ html, body {
   background: #111;
   color: #fff;
   border: none;
-  border-radius: 8px;
+  
   width: 60px;
   height: 36px;
   font-size: 1.1rem;
@@ -147,7 +149,7 @@ html, body {
   min-width: 260px;
   margin-bottom: 0;
   background: #223b47;
-  border-radius: 16px;
+  
   box-shadow: 0 4px 16px rgba(24,46,55,0.10);
   display: flex;
   flex-direction: column;
