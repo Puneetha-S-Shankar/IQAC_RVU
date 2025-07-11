@@ -7,13 +7,11 @@ const YEARS = [2022, 2023, 2024, 2025];
 const BATCHES = ["1st year", "2nd year", "3rd year", "4th year"];
 const COURSE_DOC_TYPES = [
   "Syllabus",
-  "Course analysis document",
-  "Internal review",
-  "External review",
   "Change document",
 ];
 
-function NestedDropdown({ label, docType, onSelect, role }) {
+// Update NestedDropdown to support an extra dropdown for the first box
+function NestedDropdown({ label, docType, onSelect, role, hideBatch, showDocDropdown }) {
   const [year, setYear] = useState("");
   const [batch, setBatch] = useState("");
   const [doc, setDoc] = useState("");
@@ -26,31 +24,118 @@ function NestedDropdown({ label, docType, onSelect, role }) {
         <option value="">Select Year</option>
         {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
       </select>
-      {year && (
+      {/* Only show batch dropdown if not hidden and year is selected */}
+      {year && !hideBatch && (
         <select value={batch} onChange={e => { setBatch(e.target.value); setDoc(""); setAction(""); }}>
           <option value="">Select Batch</option>
           {BATCHES.map(b => <option key={b} value={b}>{b}</option>)}
         </select>
       )}
-      {year && batch && docType && (
-        <select value={doc} onChange={e => { setDoc(e.target.value); setAction(""); }}>
-          <option value="">Select Document Type</option>
+      {/* Show extra document dropdown for Syllabus box only */}
+      {showDocDropdown && year && batch && (
+        <select value={doc} onChange={e => setDoc(e.target.value)}>
+          <option value="">Document</option>
           {COURSE_DOC_TYPES.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
       )}
-      {year && batch && (!docType || doc) && (
+      {((year && !docType) || (docType && year && batch && (!showDocDropdown || (showDocDropdown && doc)))) && (!hideBatch || (hideBatch && year)) && (
         <div className="dropdown-actions">
           {role === "admin" && (
-            <button onClick={() => onSelect({ year, batch, doc: docType ? doc : null, action: "upload" })}>Upload</button>
+            <button onClick={() => onSelect({ year, batch: hideBatch ? null : batch, doc: showDocDropdown ? doc : (docType ? doc : null), action: "upload" })}>Upload</button>
           )}
           <button
             onClick={() => {
-              console.log("View button clicked with:", { year, batch, doc });
-              onSelect({ year, batch, doc: docType ? doc : null, action: "view" });
+              onSelect({ year, batch: hideBatch ? null : batch, doc: showDocDropdown ? doc : (docType ? doc : null), action: "view" });
             }}
           >
             View
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const COURSE_CODE_MAP = {
+  "CS101": "Introduction to Computer Science",
+  "CS102": "Data Structures",
+  "CS103": "Algorithms",
+  "CS104": "Operating Systems",
+  "CS105": "Database Systems",
+  // Add more as needed
+};
+
+function CourseDocumentsSidebar({ onSelect, role }) {
+  const [batch, setBatch] = useState("");
+  const [semester, setSemester] = useState("");
+  const [courseCode, setCourseCode] = useState("");
+  const [courseName, setCourseName] = useState("");
+  const [document, setDocument] = useState("");
+
+  const YEARS = [2022, 2023, 2024, 2025];
+  const SEMESTERS = ["1st year", "2nd year", "3rd year", "4th year"];
+  const DOCUMENT_OPTIONS = ["Course Analysis", "Internal Review", "External Review"];
+
+  useEffect(() => {
+    if (courseCode && COURSE_CODE_MAP[courseCode.toUpperCase()]) {
+      setCourseName(COURSE_CODE_MAP[courseCode.toUpperCase()]);
+    } else {
+      setCourseName("");
+    }
+  }, [courseCode]);
+
+  if (role === "viewer") return null;
+
+  const info = { year: batch, batch: semester, courseCode, courseName, doc: document };
+
+  return (
+    <div className="program-nested-dropdown">
+      <div className="dropdown-label">Course Documents</div>
+      <select value={batch} onChange={e => { setBatch(e.target.value); setSemester(""); setCourseCode(""); setCourseName(""); setDocument(""); }}>
+        <option value="">Batch</option>
+        {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+      {batch && (
+        <select value={semester} onChange={e => { setSemester(e.target.value); setCourseCode(""); setCourseName(""); setDocument(""); }}>
+          <option value="">Semester</option>
+          {SEMESTERS.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      )}
+      {batch && semester && (
+        <div style={{ width: "100%", marginBottom: 10, padding: 0 }}>
+          <input
+            type="text"
+            placeholder="Course Code"
+            value={courseCode}
+            onChange={e => setCourseCode(e.target.value)}
+            style={{ width: "100%", padding: "10px 12px", border: "1.5px solid #D5AB5D", background: "#182E37", color: "#fff", borderRadius: 0, boxSizing: "border-box" }}
+          />
+        </div>
+      )}
+      {batch && semester && courseName && (
+        <div style={{ color: "#D5AB5D", marginBottom: 10 }}><b>{courseName}</b></div>
+      )}
+      {batch && semester && courseName && (
+        <select value={document} onChange={e => setDocument(e.target.value)}>
+          <option value="">Documents</option>
+          {DOCUMENT_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+        </select>
+      )}
+      {/* Buttons: only show when all fields are filled */}
+      {batch && semester && courseName && document && (
+        <div className="dropdown-actions">
+          {role === "admin" && (
+            <>
+              <button onClick={() => onSelect({ ...info, action: "upload" })}>Upload</button>
+              <button onClick={() => onSelect({ ...info, action: "view" })}>View</button>
+            </>
+          )}
+          {role === "user" && (
+            <>
+              <button onClick={() => onSelect({ ...info, action: "download" })}>Download</button>
+              <button onClick={() => onSelect({ ...info, action: "view" })}>View</button>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -181,10 +266,12 @@ const ProgramPage = ({ aboutTexts }) => {
     <div className="program-page-root curriculum-dev-container" style={{ display: "flex", gap: 32, minHeight: 600 }}>
       {/* Sidebar */}
       <div className="program-sidebar" style={{ flex: 1, maxWidth: 320 }}>
-        <button className="curriculum-dev-nav-btn" style={{ marginBottom: 16 }} onClick={() => navigate("/curriculum")}>Curriculum Development</button>
-        <button className="curriculum-dev-nav-btn" style={{ marginBottom: 24 }} onClick={() => setMainView("about")}>About {programName}</button>
-        <NestedDropdown label="Course Documents" docType={true} onSelect={handleDropdownSelect} role={role} />
-        <NestedDropdown label="Program Documents" docType={false} onSelect={handleDropdownSelect} role={role} />
+        {/* 1st box: Syllabus (with dropdowns and actions and extra document dropdown) */}
+        <NestedDropdown label="Syllabus" docType={true} onSelect={handleDropdownSelect} role={role} showDocDropdown={true} />
+        {/* 2nd box: Curriculum Development (only year dropdown) */}
+        <NestedDropdown label="Curriculum Development" docType={false} onSelect={handleDropdownSelect} role={role} hideBatch={true} />
+        {/* 3rd box: Course Documents (step-by-step dropdowns/inputs) */}
+        <CourseDocumentsSidebar onSelect={handleDropdownSelect} role={role} />
       </div>
       {/* Divider */}
       <div style={{ width: 2, background: "#D5AB5D33", margin: "0 24px" }} />
@@ -201,7 +288,16 @@ const ProgramPage = ({ aboutTexts }) => {
         {mainView === "upload" && role === "admin" && (
           <div className="program-upload-card curriculum-dev-about-section">
             <h3>Upload Document</h3>
-            <p>Year: {docInfo?.year}, Batch: {docInfo?.batch}{docInfo?.doc ? `, Document: ${docInfo.doc}` : ""}</p>
+            {/* Show document context info */}
+            <p style={{ color: "#D5AB5D", fontWeight: 500, marginBottom: 16 }}>
+              Uploading for:
+              {docInfo?.year && ` Year: ${docInfo.year}`}
+              {docInfo?.batch && `, Batch: ${docInfo.batch}`}
+              {docInfo?.semester && `, Semester: ${docInfo.semester}`}
+              {docInfo?.courseCode && `, Course Code: ${docInfo.courseCode}`}
+              {docInfo?.courseName && `, Course Name: ${docInfo.courseName}`}
+              {docInfo?.doc && `, Document: ${docInfo.doc}`}
+            </p>
             <div
               className={`drag-drop-area${dragActive ? " drag-active" : ""}`}
               onDragEnter={handleDrag}
@@ -259,7 +355,7 @@ const ProgramPage = ({ aboutTexts }) => {
                     Document preview not supported. <a href={`http://localhost:5000/uploads/${viewedFile.filename}`} target="_blank" rel="noopener noreferrer">Open in new tab</a>
                   </div>
                 )}
-                {role === "user" && (
+                {role === "user" && mainView === "view" && docInfo?.action === "download" && viewedFile && (
                   <a
                     href={`http://localhost:5000/api/files/${viewedFile._id}/download`}
                     className="curriculum-dev-nav-btn"
@@ -275,15 +371,9 @@ const ProgramPage = ({ aboutTexts }) => {
             )}
           </div>
         )}
-        {mainView === "about" && (
-          <div className="program-outcomes-card curriculum-dev-about-section" style={{ marginTop: 24 }}>
-            <h3 style={{ color: "#D5AB5D" }}>Program Specific Outcomes</h3>
-            <p>[Add program specific outcomes here]</p>
-          </div>
-        )}
       </div>
     </div>
   );
 };
 
-export default ProgramPage; 
+export default ProgramPage;
