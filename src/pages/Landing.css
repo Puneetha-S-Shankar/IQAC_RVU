@@ -1,0 +1,155 @@
+.landing-footer {
+  background: linear-gradient(160deg, #061c2d, #032539);
+  color: #fff;
+  padding: 60px 40px 40px;
+  font-family: 'Segoe UI', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Floating mist effect */
+.landing-footer::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  left: -50px;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.04), transparent 60%);
+  animation: floatmist 12s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes floatmist {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(-100px, -80px);
+  }
+}
+
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 40px;
+  position: relative;
+  z-index: 1;
+}
+
+.footer-left,
+.footer-mid,
+.footer-links {
+  flex: 1;
+  min-width: 250px;
+  position: relative;
+}
+
+.footer-left::after,
+.footer-mid::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -20px;
+  height: 100%;
+  width: 1px;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.footer-left h2 {
+  color: #FFD700;
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+
+.footer-left p,
+.footer-mid p {
+  line-height: 1.5;
+  margin: 6px 0;
+}
+
+.footer-mid h4 {
+  color: #f4e9b0;
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+}
+
+.footer-links a {
+  display: block;
+  color: #FFD700;
+  margin: 6px 0;
+  text-decoration: none;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: #fff;
+  transform: translateX(6px);
+}
+
+.footer-social {
+  text-align: center;
+  margin: 30px 0 10px;
+  z-index: 1;
+  position: relative;
+}
+
+.footer-social a {
+  color: white;
+  margin: 0 12px;
+  font-size: 1.5rem;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.footer-social a:hover {
+  transform: scale(1.2);
+  color: #FFD700;
+}
+
+.footer-bottom {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #bbb;
+  position: relative;
+  z-index: 1;
+}
+
+.chat-popup {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 99;
+}
+
+.chat-bot {
+  background: #fff;
+  color: #000;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  max-width: 260px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.back-to-top {
+  position: fixed;
+  bottom: 20px;
+  right: 80px;
+  background: #FFD700;
+  color: #032539;
+  font-size: 1.2rem;
+  padding: 6px 10px;
+  border-radius: 50%;
+  text-decoration: none;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+  transition: all 0.3s ease;
+  z-index: 100;
+}
+
+.back-to-top:hover {
+  background: #fff;
+  color: #000;
+}

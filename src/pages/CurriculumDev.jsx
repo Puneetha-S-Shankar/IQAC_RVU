@@ -11,10 +11,10 @@ const CurriculumDev = () => {
 
   return (
     <div className="curriculum-dev-container">
-      <h1 className="curriculum-dev-main-heading">Curriculum Development</h1>
+      <h1 className="curriculum-dev-main-heading">Curriculum </h1>
 
       <div className="curriculum-dev-about-section">
-        <h2 className="curriculum-dev-subheading">About curriculum development</h2>
+        <h2 className="curriculum-dev-subheading">About curriculum </h2>
         <p className="curriculum-dev-about-text">
           Curriculum development is a dynamic process that involves the design, implementation, and evaluation of educational programs. It ensures that the content, teaching methods, and assessments are aligned with the latest academic standards and industry requirements. Through continuous improvement, curriculum development aims to provide students with relevant knowledge, practical skills, and critical thinking abilities to succeed in their chosen fields. Collaboration among faculty, industry experts, and stakeholders is essential to create a curriculum that meets the evolving needs of society and prepares graduates for future challenges.
         </p>

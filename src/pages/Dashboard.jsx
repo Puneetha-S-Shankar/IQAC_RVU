@@ -4,7 +4,7 @@ import "./Dashboard.css";
 import { AuthContext } from "../context/AuthContext";
 
 const criteria = [
-  "Curriculum Development",
+  "Curriculum ",
   "Teaching and Learning",
   "Research",
   "Infrastructure and Learning",
