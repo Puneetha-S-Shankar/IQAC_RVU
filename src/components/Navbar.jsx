@@ -62,16 +62,15 @@ const Navbar = () => {
             style={{ height: "50px", marginRight: "18px" }}
           />
         </Link>
-        <div
-          style={{
-            fontSize: "1.4rem",
-            fontWeight: "bold",
-            color: "#FFD700",
-            letterSpacing: "1px",
-          }}
-        >
+        <Link to="/" style={{
+          fontSize: "1.4rem",
+          fontWeight: "bold",
+          color: "#FFD700",
+          letterSpacing: "1px",
+          textDecoration: "none"
+        }}>
           IQAC Portal
-        </div>
+        </Link>
       </div>
 
       {/* Nav Links */}
