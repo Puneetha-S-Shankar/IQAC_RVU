@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const database = require('../utils/database');
 const router = express.Router();
+const PDFMerger = require('pdf-merger-js').default;
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -272,6 +273,113 @@ router.get('/categories/list', async (req, res) => {
   } catch (error) {
     console.error('Get categories error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Merge PDFs endpoint
+router.post('/merge', async (req, res) => {
+  try {
+    console.log('--- /merge called ---');
+    console.log('Request body:', req.body);
+    const { fileIds, mergedFileName } = req.body;
+    if (!Array.isArray(fileIds) || fileIds.length < 2) {
+      console.log('Error: Not enough file IDs');
+      return res.status(400).json({ error: 'At least two file IDs are required to merge.' });
+    }
+    console.log('File IDs:', fileIds);
+    const files = await Promise.all(fileIds.map(id => database.findFileById(id)));
+    console.log('Fetched files:', files);
+    if (files.some(f => !f)) {
+      console.log('Error: One or more files not found');
+      return res.status(404).json({ error: 'One or more files not found.' });
+    }
+    if (files.some(f => f.mimetype !== 'application/pdf')) {
+      console.log('Error: Not all files are PDFs', files.map(f => f && f.mimetype));
+      return res.status(400).json({ error: 'All files must be PDFs.' });
+    }
+    const merger = new PDFMerger();
+    for (const file of files) {
+      const filePath = path.join(__dirname, '../uploads', file.filename);
+      console.log('Adding file to merger:', filePath);
+      try {
+        await merger.add(filePath);
+        console.log('Successfully added:', filePath);
+      } catch (err) {
+        console.error('Error adding file to merger:', err);
+        return res.status(500).json({ error: 'Failed to add file to merger', details: err.message });
+      }
+    }
+    const mergedName = mergedFileName || `merged-${Date.now()}.pdf`;
+    const mergedPath = path.join(__dirname, '../uploads', mergedName);
+    console.log('Saving merged PDF to:', mergedPath);
+    try {
+      await merger.save(mergedPath);
+      console.log('Successfully saved merged PDF.');
+    } catch (err) {
+      console.error('Error saving merged PDF:', err);
+      return res.status(500).json({ error: 'Failed to save merged PDF', details: err.message });
+    }
+    // Optionally, save merged file metadata to DB
+    const mergedFileData = {
+      originalName: mergedName,
+      filename: mergedName,
+      mimetype: 'application/pdf',
+      size: (await fs.stat(mergedPath)).size,
+      uploadedBy: req.body.uploadedBy || 'system',
+      category: 'merged',
+      description: 'Merged PDF',
+      tags: [],
+      programme: files[0].programme,
+      docLevel: files[0].docLevel,
+      courseName: files[0].courseName, // Ensure courseName is set
+      year: files[0].year,
+      batch: files[0].batch,
+      semester: files[0].semester,
+      docType: 'merged',
+    };
+    console.log('Saving merged file metadata:', mergedFileData);
+    const savedMerged = await database.saveFile(mergedFileData);
+    console.log('Merged file saved:', savedMerged);
+    res.json({
+      message: 'PDFs merged successfully',
+      file: {
+        _id: savedMerged._id,
+        originalName: savedMerged.originalName,
+        filename: savedMerged.filename,
+        mimetype: savedMerged.mimetype,
+        size: savedMerged.size,
+        uploadedBy: savedMerged.uploadedBy,
+        uploadedAt: savedMerged.uploadedAt,
+        downloadUrl: `/uploads/${savedMerged.filename}`
+      }
+    });
+  } catch (error) {
+    console.error('PDF merge error:', error);
+    res.status(500).json({ error: 'Server error during PDF merge' });
+  }
+});
+
+// Get global upload deadline
+router.get('/deadline', async (req, res) => {
+  try {
+    const db = await database.readDatabase();
+    res.json({ deadline: db.globalDeadline || null });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error getting deadline' });
+  }
+});
+
+// Set global upload deadline (admin only)
+router.post('/deadline', async (req, res) => {
+  try {
+    const { deadline } = req.body;
+    if (!deadline) return res.status(400).json({ error: 'Deadline is required' });
+    const db = await database.readDatabase();
+    db.globalDeadline = deadline;
+    await database.writeDatabase(db);
+    res.json({ message: 'Deadline set successfully', deadline });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error setting deadline' });
   }
 });
 

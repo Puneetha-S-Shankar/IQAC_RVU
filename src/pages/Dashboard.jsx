@@ -21,6 +21,9 @@ export default function Dashboard() {
   const handleCurriculumClick = () => {
     navigate("/curriculum");
   };
+  const handleTeachingLearningClick = () => {
+    navigate("/teaching-learning");
+  };
 
   return (
     <div className="dashboard">
@@ -50,8 +53,20 @@ export default function Dashboard() {
             key={label}
             className="dashboard-card criteria-animated-btn"
             tabIndex={0}
-            onClick={label.toLowerCase().includes("curriculum") ? handleCurriculumClick : undefined}
-            style={{ cursor: label.toLowerCase().includes("curriculum") ? "pointer" : "default" }}
+            onClick={
+              label.toLowerCase().includes("curriculum")
+                ? handleCurriculumClick
+                : label.toLowerCase().includes("teaching")
+                ? handleTeachingLearningClick
+                : undefined
+            }
+            style={{
+              cursor:
+                label.toLowerCase().includes("curriculum") ||
+                label.toLowerCase().includes("teaching")
+                  ? "pointer"
+                  : "default",
+            }}
           >
             <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
             <div className="dashboard-card-title" style={{ marginTop: 0 }}>{label}</div>
