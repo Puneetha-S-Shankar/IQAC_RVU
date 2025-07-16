@@ -12,6 +12,7 @@ import Policy from './pages/Policy';
 import Template from './pages/Template';
 import CurriculumDev from "./pages/CurriculumDev";
 import ProgramPage from "./pages/ProgramPage";
+import TeachingAndLearning from "./pages/TeachingAndLearning";
 
 const aboutTexts = {
   BTECH: "About BTech program...",
@@ -33,6 +34,7 @@ const App = () => {
         <Route path="/template" element={<Template />} />
         <Route path="/curriculum" element={<CurriculumDev />} />
         <Route path="/program" element={<ProgramPage aboutTexts={aboutTexts} />} />
+        <Route path="/teaching-and-learning" element={<TeachingAndLearning />} />
       </Routes>
     </Router>
   );
