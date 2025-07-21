@@ -22,6 +22,10 @@ export default function Dashboard() {
     navigate("/curriculum");
   };
 
+  const handleTeachingAndLearningClick = () => {
+    navigate("/teaching-and-learning");
+  };
+
   return (
     <div className="dashboard">
       {/* Top Row */}
@@ -45,32 +49,78 @@ export default function Dashboard() {
 
       {/* Criteria Cards - flexbox layout */}
       <div className="criteria-flex-row">
-        {criteria.slice(0, 4).map((label) => (
-          <div
-            key={label}
-            className="dashboard-card criteria-animated-btn"
-            tabIndex={0}
-            onClick={label.toLowerCase().includes("curriculum") ? handleCurriculumClick : undefined}
-            style={{ cursor: label.toLowerCase().includes("curriculum") ? "pointer" : "default" }}
-          >
-            <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
-            <div className="dashboard-card-title" style={{ marginTop: 0 }}>{label}</div>
-          </div>
-        ))}
+        <div
+          key={criteria[0]}
+          className="dashboard-card criteria-animated-btn"
+          tabIndex={0}
+          onClick={handleCurriculumClick}
+          style={{ cursor: "pointer" }}
+        >
+          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[0]}</div>
+        </div>
+        <div
+          key={criteria[1]}
+          className="dashboard-card criteria-animated-btn"
+          tabIndex={0}
+          onClick={handleTeachingAndLearningClick}
+          style={{ cursor: "pointer" }}
+        >
+          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[1]}</div>
+        </div>
+        <div
+          key={criteria[2]}
+          className="dashboard-card criteria-animated-btn"
+          tabIndex={0}
+          onClick={undefined}
+          style={{ cursor: "default" }}
+        >
+          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[2]}</div>
+        </div>
+        <div
+          key={criteria[3]}
+          className="dashboard-card criteria-animated-btn"
+          tabIndex={0}
+          onClick={undefined}
+          style={{ cursor: "default" }}
+        >
+          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[3]}</div>
+        </div>
       </div>
       <div className="criteria-flex-row criteria-flex-row-bottom">
-        {criteria.slice(4).map((label) => (
-          <div
-            key={label}
-            className="dashboard-card criteria-animated-btn"
-            tabIndex={0}
-            onClick={label.toLowerCase().includes("curriculum") ? handleCurriculumClick : undefined}
-            style={{ cursor: label.toLowerCase().includes("curriculum") ? "pointer" : "default" }}
-          >
-            <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
-            <div className="dashboard-card-title" style={{ marginTop: 0 }}>{label}</div>
-          </div>
-        ))}
+        <div
+          key={criteria[4]}
+          className="dashboard-card criteria-animated-btn"
+          tabIndex={0}
+          onClick={undefined}
+          style={{ cursor: "default" }}
+        >
+          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[4]}</div>
+        </div>
+        <div
+          key={criteria[5]}
+          className="dashboard-card criteria-animated-btn"
+          tabIndex={0}
+          onClick={undefined}
+          style={{ cursor: "default" }}
+        >
+          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[5]}</div>
+        </div>
+        <div
+          key={criteria[6]}
+          className="dashboard-card criteria-animated-btn"
+          tabIndex={0}
+          onClick={undefined}
+          style={{ cursor: "default" }}
+        >
+          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[6]}</div>
+        </div>
       </div>
     </div>
   );

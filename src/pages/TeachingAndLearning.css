@@ -1,0 +1,144 @@
+.teaching-learning-main-container {
+  min-height: 100vh;
+  background: #182E37;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 2vw 0 2vw 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.teaching-learning-main-heading {
+  font-size: 2.3rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 2rem;
+  letter-spacing: 1px;
+  color: #D5AB5D;
+  padding-top: 32px;
+  padding-bottom: 8px;
+}
+
+.teaching-learning-main-row {
+  display: flex;
+  flex-direction: row;
+  gap: 3.5vw;
+  width: 100%;
+  max-width: 1200px;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.teaching-learning-sidebar {
+  background: #223b47;
+  border: 2px solid rgba(150, 130, 13, 0.3);
+  border-radius: 0px;
+  color: #fff;
+  padding: 2rem 1.2rem;
+  min-width: 24vw;
+  max-width: 36vw;
+  width: 100%;
+  flex: 1 1 28vw;
+  margin-bottom: 2vw;
+  box-shadow: 0 4px 16px rgba(24,46,55,0.10);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.teaching-learning-sidebar-btn {
+  background: #D5AB5D;
+  color: #223b47;
+  border: none;
+  border-radius: 6px;
+  padding: 0.9rem 1.2rem;
+  font-weight: 600;
+  font-size: 1.08rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(213,171,93,0.18);
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+}
+
+.teaching-learning-mainbox {
+  background: #223b47;
+  border: 2px solid rgba(150, 130, 13, 0.3);
+  border-radius: 0px;
+  color: #fff;
+  padding: 2rem 2vw;
+  min-width: 32vw;
+  max-width: 52vw;
+  width: 100%;
+  flex: 2 1 40vw;
+  min-height: 180px;
+  box-shadow: 0 4px 16px rgba(24,46,55,0.10);
+  font-size: 1.1rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.teaching-learning-mainbox-header {
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #D5AB5D;
+  font-size: 1.3rem;
+}
+
+.teaching-learning-document-list {
+  margin-top: 1.2rem;
+  padding-left: 1.2rem;
+  color: #223b47;
+  font-size: 1.08rem;
+  width: 100%;
+}
+
+.teaching-learning-document-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+  color: #fff;
+}
+
+.teaching-learning-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.teaching-learning-upload-btn,
+.teaching-learning-view-btn {
+  padding: 5px 15px;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.orange {
+  background-color: orange;
+}
+
+.green {
+  background-color: green;
+}
+
+@media (max-width: 900px) {
+  .teaching-learning-main-row {
+    flex-direction: column;
+    gap: 28px;
+    align-items: stretch;
+  }
+  .teaching-learning-sidebar, .teaching-learning-mainbox {
+    max-width: 100%;
+  }
+} 
