@@ -5,9 +5,7 @@ import iqac3 from "../assets/iqac3.jpg";
 import iqac4 from "../assets/iqac4.jpg";
 import './Landing.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import { Document, Page, pdfjs } from 'react-pdf';
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+import PDFViewer from '../components/PDFViewer.jsx'; // Corrected import path
 
 const pdfFiles = [
   "BB 1st.pdf",
@@ -69,18 +67,13 @@ const AchievementsSection = () => {
               rel="noopener noreferrer"
               style={{ textDecoration: "none", color: "#D5AB5D" }}
             >
-              <Document
-                file={`/pdfs/${file}`}
-                loading="Loading..."
-                renderMode="canvas"
-              >
-                <Page
-                  pageNumber={1}
-                  width={200}
-                  renderTextLayer={false}
-                  renderAnnotationLayer={false}
+              <div style={{ width: '200px', backgroundColor: '#fff' }}>
+                <PDFViewer
+                  fileUrl={`/pdfs/${file}`}
+                  showControls={false}
+                  fitParentWidth={true}
                 />
-              </Document>
+              </div>
               <p style={{ marginTop: "0.8rem", fontWeight: "bold" }}>
                 View {file.replace(".pdf", "")}
               </p>

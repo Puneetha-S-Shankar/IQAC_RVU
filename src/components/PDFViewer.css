@@ -1,0 +1,81 @@
+/* PDFViewer.css */
+.pdf-viewer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #2c3e50; /* A slightly lighter shade than the dashboard */
+  border: 1px solid #d5ab5d;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.pdf-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #182e37;
+  border-radius: 6px;
+  width: 100%;
+  max-width: 600px;
+  box-sizing: border-box;
+}
+
+.pdf-controls button,
+.pdf-controls a {
+  background-color: #d5ab5d;
+  color: #182e37;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.pdf-controls button:hover,
+.pdf-controls a:hover {
+  background-color: #ffe04a;
+  transform: scale(1.05);
+}
+
+.pdf-controls button:disabled {
+  background-color: #555;
+  color: #888;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.page-info {
+  color: #fff;
+  font-weight: bold;
+  font-size: 1rem;
+  margin: 0 0.5rem;
+}
+
+.pdf-canvas-wrapper {
+  overflow: auto;
+  width: 100%;
+  max-width: 100%;
+  max-height: 70vh; /* Limit height to 70% of the viewport height */
+  border: 1px solid #182e37;
+  border-radius: 4px;
+  background: #fff; /* White background for the PDF itself */
+}
+
+.pdf-canvas {
+  display: block;
+  margin: 0 auto;
+}
+
+.pdf-viewer-message {
+  color: #ffe04a;
+  font-size: 1.2rem;
+  font-weight: 500;
+  padding: 2rem;
+} 

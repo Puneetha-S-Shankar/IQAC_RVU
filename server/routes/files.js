@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const { ObjectId } = require('mongodb');
-const mongoDB = require('../config/database');
+const mongoose = require('mongoose'); // Import Mongoose
 const router = express.Router();
 
 // Use multer memory storage
@@ -36,9 +36,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    await mongoDB.connect();
-    const bucket = mongoDB.getBucket();
-    const db = mongoDB.getDatabase();
+    const db = mongoose.connection.db; // Use the existing Mongoose connection
+    const bucket = new mongoose.mongo.GridFSBucket(db, {
+      bucketName: 'files'
+    });
 
     // Check for existing file with same metadata
     const metaQuery = {
@@ -90,29 +91,33 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// Get all files (metadata)
+// Get all files (metadata) - REFACTORED
 router.get('/', async (req, res) => {
   try {
-    await mongoDB.connect();
-    const db = mongoDB.getDatabase();
+    const db = mongoose.connection.db; // Use the existing Mongoose connection
     const query = {};
     const fields = ['category', 'uploadedBy', 'programme', 'docLevel', 'year', 'batch', 'semester', 'docType'];
+    
     fields.forEach(field => {
-      if (req.query[field]) query[`metadata.${field}`] = req.query[field];
+      // Build query, ensuring empty strings from frontend don't limit results
+      if (req.query[field] && req.query[field] !== '') {
+        query[`metadata.${field}`] = req.query[field];
+      }
     });
+
     const files = await db.collection('files.files').find(query).toArray();
     res.json({ files });
   } catch (error) {
     console.error('Get files error:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error while fetching files' });
   }
 });
+
 
 // Get file by ID (metadata)
 router.get('/:id', async (req, res) => {
   try {
-    await mongoDB.connect();
-    const db = mongoDB.getDatabase();
+    const db = mongoose.connection.db; // Use the existing Mongoose connection
     const file = await db.collection('files.files').findOne({ _id: new ObjectId(req.params.id) });
     if (!file) {
       return res.status(404).json({ error: 'File not found' });
@@ -127,9 +132,10 @@ router.get('/:id', async (req, res) => {
 // Download file from GridFS
 router.get('/:id/download', async (req, res) => {
   try {
-    await mongoDB.connect();
-    const bucket = mongoDB.getBucket();
-    const db = mongoDB.getDatabase();
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+      bucketName: 'files'
+    });
+    const db = mongoose.connection.db;
     const file = await db.collection('files.files').findOne({ _id: new ObjectId(req.params.id) });
     if (!file) {
       return res.status(404).json({ error: 'File not found' });
