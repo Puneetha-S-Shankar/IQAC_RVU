@@ -6,8 +6,6 @@ import iqac4 from "../assets/iqac4.jpg";
 import './Landing.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { Document, Page, pdfjs } from 'react-pdf';
-// import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-// import 'react-pdf/dist/esm/Page/TextLayer.css';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 

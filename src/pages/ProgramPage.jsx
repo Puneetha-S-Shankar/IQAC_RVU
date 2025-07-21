@@ -2,6 +2,8 @@ import React, { useState, useRef, useContext, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./CurriculumDev.css";
 import { AuthContext } from "../context/AuthContext";
+import { Document, Page, pdfjs } from 'react-pdf';
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 const YEARS = [2022, 2023, 2024, 2025];
 const BATCHES = ["1st year", "2nd year", "3rd year", "4th year"];
@@ -340,21 +342,46 @@ const ProgramPage = ({ aboutTexts }) => {
               <div style={{ marginTop: 12 }}>
                 {console.log("Viewing file:", viewedFile)} {/* DEBUG */}
                 <div style={{ marginBottom: 8 }}>
-                  <a href={`http://localhost:5000/uploads/${viewedFile.filename}`} target="_blank" rel="noopener noreferrer">View Fullscreen</a>
+                  <a href={`http://localhost:5000/api/files/${viewedFile._id}/download`} target="_blank" rel="noopener noreferrer">Open in new tab</a>
                 </div>
-                {viewedFile.mimetype === "application/pdf" ? (
-                  <iframe
-                    src={`http://localhost:5000/uploads/${viewedFile.filename}`}
-                    title={viewedFile.originalName}
-                    width="100%"
-                    height="500px"
-                    style={{ border: "1px solid #D5AB5D", borderRadius: 8 }}
-                  />
-                ) : (
-                  <div style={{ color: "#D5AB5D" }}>
-                    Document preview not supported. <a href={`http://localhost:5000/uploads/${viewedFile.filename}`} target="_blank" rel="noopener noreferrer">Open in new tab</a>
-                  </div>
-                )}
+                {(() => {
+                  if (viewedFile.mimetype === "application/pdf") {
+                    return (
+                      <Document
+                        file={`http://localhost:5000/api/files/${viewedFile._id}/download`}
+                        loading="Loading PDF..."
+                      >
+                        <Page pageNumber={1} width={600} />
+                      </Document>
+                    );
+                  } else if (viewedFile.mimetype && viewedFile.mimetype.startsWith("image/")) {
+                    return (
+                      <img
+                        src={`http://localhost:5000/api/files/${viewedFile._id}/download`}
+                        alt={viewedFile.filename}
+                        style={{ maxWidth: 600, maxHeight: 800, borderRadius: 8, marginTop: 12 }}
+                      />
+                    );
+                  } else if (viewedFile.mimetype && viewedFile.mimetype.startsWith("text/")) {
+                    // Fetch and display text file content
+                    const [textContent, setTextContent] = React.useState("");
+                    React.useEffect(() => {
+                      fetch(`http://localhost:5000/api/files/${viewedFile._id}/download`)
+                        .then(res => res.text())
+                        .then(setTextContent)
+                        .catch(() => setTextContent("(Failed to load text file)"));
+                    }, [viewedFile._id]);
+                    return (
+                      <pre style={{ maxWidth: 600, maxHeight: 400, overflow: 'auto', background: '#222', color: '#ffe04a', padding: 12, borderRadius: 8 }}>{textContent}</pre>
+                    );
+                  } else {
+                    return (
+                      <div style={{ color: "#D5AB5D" }}>
+                        Document preview not supported. <a href={`http://localhost:5000/api/files/${viewedFile._id}/download`} target="_blank" rel="noopener noreferrer">Open in new tab</a>
+                      </div>
+                    );
+                  }
+                })()}
                 {role === "user" && mainView === "view" && docInfo?.action === "download" && viewedFile && (
                   <a
                     href={`http://localhost:5000/api/files/${viewedFile._id}/download`}

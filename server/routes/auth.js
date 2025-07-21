@@ -1,5 +1,6 @@
 const express = require('express');
-const database = require('../utils/database');
+const User = require('../models/User');
+const bcrypt = require('bcrypt');
 const router = express.Router();
 
 // Register route
@@ -7,7 +8,7 @@ router.post('/register', async (req, res) => {
   const { username, email, password, firstName, lastName } = req.body;
   try {
     // Check if user already exists
-    const existingUser = await database.findUser({ email });
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
@@ -18,10 +19,13 @@ router.post('/register', async (req, res) => {
       password, // In production, this should be hashed
       firstName,
       lastName,
-      role: 'user' // Default role for new registrations
+      role: 'user', // Default role for new registrations
+      isActive: true,
+      createdAt: new Date(),
+      lastLogin: new Date()
     };
 
-    const user = await database.createUser(userData);
+    const user = await User.create(userData);
     res.status(201).json({ 
       message: 'User created successfully',
       user: {
@@ -43,27 +47,23 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
     // Find user by email
-    const user = await database.findUser({ email });
-    
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-
-    // Check password (in production, use proper password hashing)
-    if (user.password !== password) {
+    // Check password using bcrypt
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-
     // Check if user is active
-    if (!user.isActive) {
+    if (user.isActive === false) {
       return res.status(401).json({ message: 'Account is deactivated' });
     }
-
     // Update last login
-    await database.updateUser(user._id, { lastLogin: new Date().toISOString() });
-
+    user.lastLogin = new Date();
+    await user.save();
     // Return user data (excluding password)
     res.json({ 
       message: 'Login successful',
@@ -86,25 +86,11 @@ router.post('/login', async (req, res) => {
 // Get user profile
 router.get('/profile/:id', async (req, res) => {
   try {
-    const user = await database.findUserById(req.params.id);
+    const user = await User.findById(req.params.id).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    // Return user data (excluding password)
-    res.json({
-      user: {
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        createdAt: user.createdAt,
-        lastLogin: user.lastLogin,
-        isActive: user.isActive
-      }
-    });
+    res.json({ user });
   } catch (err) {
     console.error('Profile error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -116,22 +102,17 @@ router.put('/profile/:id', async (req, res) => {
   try {
     const { firstName, lastName, email } = req.body;
     const updateData = { firstName, lastName, email };
-    
-    const updatedUser = await database.updateUser(req.params.id, updateData);
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData },
+      { new: true, runValidators: true, context: 'query' }
+    ).select('-password');
     if (!updatedUser) {
       return res.status(404).json({ message: 'User not found' });
     }
-
     res.json({ 
       message: 'Profile updated successfully',
-      user: {
-        _id: updatedUser._id,
-        username: updatedUser.username,
-        email: updatedUser.email,
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName,
-        role: updatedUser.role
-      }
+      user: updatedUser
     });
   } catch (err) {
     console.error('Profile update error:', err);
@@ -142,19 +123,7 @@ router.put('/profile/:id', async (req, res) => {
 // Get all users (admin only)
 router.get('/users', async (req, res) => {
   try {
-    const db = await database.readDatabase();
-    const users = db.users.map(user => ({
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      createdAt: user.createdAt,
-      lastLogin: user.lastLogin,
-      isActive: user.isActive
-    }));
-    
+    const users = await User.find().select('-password');
     res.json({ users });
   } catch (err) {
     console.error('Get users error:', err);
