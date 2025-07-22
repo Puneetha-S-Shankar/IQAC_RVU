@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
-import workerSrc from 'pdfjs-dist/build/pdf.worker.min.js?url';
+import { pdfjs } from 'react-pdf';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import './PDFViewer.css';
 
-GlobalWorkerOptions.workerSrc = workerSrc;
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const PDFViewer = ({ fileUrl, showControls = true, initialScale = 1.5, fitParentWidth = false }) => {
   const canvasRef = useRef(null);
@@ -18,7 +18,7 @@ const PDFViewer = ({ fileUrl, showControls = true, initialScale = 1.5, fitParent
     setLoading(true);
     setError(null);
 
-    const loadingTask = getDocument(fileUrl);
+    const loadingTask = pdfjs.getDocument(fileUrl);
     loadingTask.promise
       .then(loadedPdf => {
         setPdfRef(loadedPdf);

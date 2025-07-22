@@ -15,12 +15,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Mongoose connection
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect(process.env.MONGODB_URI);
 mongoose.connection.on('connected', () => {
-  console.log('✅ Mongoose connected to MongoDB Atlas');
+  console.log('✅ Mongoose connected');
 });
 mongoose.connection.on('error', (err) => {
   console.error('❌ Mongoose connection error:', err);

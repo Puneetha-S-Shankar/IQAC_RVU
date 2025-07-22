@@ -52,7 +52,8 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     };
     const existing = await db.collection('files.files').findOne(metaQuery);
     if (existing) {
-      return res.status(409).json({ error: 'A file for this selection already exists.' });
+      // Delete the existing file from GridFS (files and chunks)
+      await bucket.delete(existing._id);
     }
 
     // Upload to GridFS
