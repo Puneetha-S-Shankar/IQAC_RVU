@@ -6,7 +6,12 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   firstName: { type: String },
   lastName: { type: String },
-  role: { type: String, default: 'user' },
+  role: { 
+    type: String, 
+    enum: ['admin', 'user', 'viewer'], 
+    default: 'viewer' 
+  },
+  department: { type: String }, // For organizing users
   isActive: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: Date.now }

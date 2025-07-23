@@ -132,6 +132,18 @@
   background-color: green;
 }
 
+.disabled {
+  background-color: #6c757d !important;
+  color: #adb5bd !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+.disabled:hover {
+  background-color: #6c757d !important;
+  transform: none !important;
+}
+
 @media (max-width: 900px) {
   .teaching-learning-main-row {
     flex-direction: column;

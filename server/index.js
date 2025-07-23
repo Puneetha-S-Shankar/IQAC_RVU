@@ -35,9 +35,13 @@ app.get('/', (req, res) => {
 // Routes
 const authRoutes = require('./routes/auth');
 const fileRoutes = require('./routes/files');
+const taskRoutes = require('./routes/tasks');
+const notificationRoutes = require('./routes/notifications');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
