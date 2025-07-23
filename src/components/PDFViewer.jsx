@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { pdfjs } from 'react-pdf';
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import './PDFViewer.css';
 
-pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
+// Set worker source for pdfjs-dist - using CDN for compatibility
+GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@5.3.93/build/pdf.worker.min.js';
 
 const PDFViewer = ({ fileUrl, showControls = true, initialScale = 1.5, fitParentWidth = false }) => {
   const canvasRef = useRef(null);
