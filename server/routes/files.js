@@ -63,14 +63,90 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
+    
     const db = mongoose.connection.db;
     const bucket = new mongoose.mongo.GridFSBucket(db, {
       bucketName: 'files'
     });
 
-    // For teaching-and-learning, check for existing file by docNumber and category
-    const { docNumber, category } = req.body;
+    const { docNumber, category, assignmentId, uploaderEmail } = req.body;
     
+    // Handle assignment-based uploads for teaching-and-learning
+    if (category === 'teaching-and-learning' && assignmentId) {
+      // Import Task model for assignment updates
+      const Task = require('../models/Task');
+      
+      // Check if assignment exists and user is authorized
+      const assignment = await Task.findById(assignmentId).populate('assignedToInitiator');
+      
+      if (!assignment) {
+        return res.status(404).json({ error: 'Assignment not found' });
+      }
+      
+      if (!assignment.assignedToInitiator || assignment.assignedToInitiator.email !== uploaderEmail) {
+        return res.status(403).json({ error: 'Not authorized to upload for this assignment' });
+      }
+      
+      if (assignment.status !== 'assigned') {
+        return res.status(400).json({ error: 'Assignment is not in a state that allows file upload' });
+      }
+      
+      // Check for existing file for this assignment and delete it
+      const existing = await db.collection('files.files').findOne({
+        'metadata.category': category,
+        'metadata.assignmentId': assignmentId
+      });
+      
+      if (existing) {
+        await bucket.delete(existing._id);
+      }
+      
+      // Create upload stream with assignment metadata
+      const uploadStream = bucket.openUploadStream(req.file.originalname, {
+        contentType: req.file.mimetype,
+        metadata: {
+          category,
+          assignmentId,
+          uploaderEmail,
+          courseCode: assignment.courseCode,
+          courseName: assignment.courseName,
+          uploadDate: new Date(),
+          status: 'uploaded'
+        }
+      });
+
+      uploadStream.end(req.file.buffer);
+      
+      uploadStream.on('finish', async () => {
+        try {
+          // Update assignment status to 'file-uploaded'
+          await Task.findByIdAndUpdate(assignmentId, { 
+            status: 'file-uploaded',
+            fileId: uploadStream.id,
+            fileUploadDate: new Date()
+          });
+          
+          res.json({
+            message: 'File uploaded successfully',
+            fileId: uploadStream.id,
+            assignmentId,
+            status: 'file-uploaded'
+          });
+        } catch (error) {
+          console.error('Error updating assignment status:', error);
+          res.status(500).json({ error: 'File uploaded but failed to update assignment status' });
+        }
+      });
+      
+      uploadStream.on('error', (error) => {
+        console.error('GridFS upload error:', error);
+        res.status(500).json({ error: 'File upload failed' });
+      });
+      
+      return; // Exit early for assignment-based uploads
+    }
+    
+    // Original logic for document number based uploads (teaching-and-learning without assignment)
     if (category === 'teaching-and-learning' && docNumber) {
       const existing = await db.collection('files.files').findOne({
         'metadata.category': category,

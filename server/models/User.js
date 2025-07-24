@@ -11,6 +11,13 @@ const userSchema = new mongoose.Schema({
     enum: ['admin', 'user', 'viewer'], 
     default: 'viewer' 
   },
+  subrole: {
+    type: String,
+    enum: ['initiator', 'reviewer', 'none'],
+    default: 'none'
+  },
+  courseCode: { type: String }, // e.g., "CS101"
+  courseName: { type: String }, // e.g., "DSCA"
   department: { type: String }, // For organizing users
   isActive: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },

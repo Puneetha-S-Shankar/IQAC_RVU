@@ -35,7 +35,7 @@ const AchievementsSection = () => {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "2rem",
+          gap: "1.5rem",
           padding: "0 2rem",
           justifyItems: "center",
         }}
@@ -46,16 +46,16 @@ const AchievementsSection = () => {
             style={{
               background: "linear-gradient(145deg, #203947, #121f28)",
               border: "1px solid rgba(213, 171, 93, 0.3)",
-              borderRadius: "15px",
-              padding: "1rem",
+              borderRadius: "12px",
+              padding: "0.8rem",
               width: "220px",
               transition: "transform 0.3s ease, box-shadow 0.3s ease",
               boxShadow:
-                "0 8px 16px rgba(0,0,0,0.4), inset 1px 1px 3px rgba(255,255,255,0.05)",
+                "0 6px 12px rgba(0,0,0,0.4), inset 1px 1px 3px rgba(255,255,255,0.05)",
               cursor: "pointer",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.transform = "scale(1.05)")
+              (e.currentTarget.style.transform = "scale(1.03)")
             }
             onMouseLeave={(e) =>
               (e.currentTarget.style.transform = "scale(1)")
@@ -67,14 +67,14 @@ const AchievementsSection = () => {
               rel="noopener noreferrer"
               style={{ textDecoration: "none", color: "#D5AB5D" }}
             >
-              <div style={{ width: '200px', backgroundColor: '#fff' }}>
+              <div style={{ width: '200px', height: '150px', backgroundColor: '#fff', borderRadius: '8px', overflow: 'hidden' }}>
                 <PDFViewer
                   fileUrl={`/pdfs/${file}`}
                   showControls={false}
                   fitParentWidth={true}
                 />
               </div>
-              <p style={{ marginTop: "0.8rem", fontWeight: "bold" }}>
+              <p style={{ marginTop: "0.6rem", fontWeight: "bold", fontSize: "0.9rem" }}>
                 View {file.replace(".pdf", "")}
               </p>
             </a>

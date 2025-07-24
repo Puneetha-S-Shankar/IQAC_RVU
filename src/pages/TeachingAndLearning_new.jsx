@@ -49,7 +49,14 @@ const TeachingAndLearning = () => {
     checkAuthStatus();
   }, [contextUser]);
 
-  // No access restriction - allow all authenticated users
+  // Redirect viewers away from this page
+  useEffect(() => {
+    if (!isAuthenticated || userRole === 'viewer') {
+      alert('Access denied. This page is only available to authenticated users.');
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, userRole, navigate]);
+
   useEffect(() => {
     if (isAuthenticated && currentUser && currentUser.email) {
       fetchUserAssignments();
@@ -190,60 +197,6 @@ const TeachingAndLearning = () => {
     return false;
   };
 
-  const handleReview = async (assignmentId, action, comment = '') => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/assignments/assignments/${assignmentId}/review`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          action,
-          comment,
-          reviewerEmail: currentUser.email
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        showMessage(`Assignment ${action}d successfully!`, 'success');
-        await fetchUserAssignments(); // Refresh assignments
-      } else {
-        showMessage(data.error || `Failed to ${action} assignment`, 'error');
-      }
-    } catch (error) {
-      console.error(`Error ${action}ing assignment:`, error);
-      showMessage(`Error ${action}ing assignment`, 'error');
-    }
-  };
-
-  const handleAdminApprove = async (assignmentId, comment = '') => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/assignments/assignments/${assignmentId}/admin-approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ comment })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        showMessage('Assignment approved by admin and completed!', 'success');
-        await fetchUserAssignments(); // Refresh assignments
-      } else {
-        showMessage(data.error || 'Failed to approve assignment', 'error');
-      }
-    } catch (error) {
-      console.error('Error approving assignment:', error);
-      showMessage('Error approving assignment', 'error');
-    }
-  };
-
   // If not authorized, show loading or redirect message
   if (!isAuthenticated || userRole === 'viewer') {
     return (
@@ -356,42 +309,8 @@ const TeachingAndLearning = () => {
                     <h4>Review Document</h4>
                     <p>Document has been uploaded and is ready for review.</p>
                     <div className="review-actions">
-                      <button 
-                        className="review-btn approve"
-                        onClick={() => handleReview(assignment._id, 'approve', 'Document approved by reviewer')}
-                      >
-                        Approve
-                      </button>
-                      <button 
-                        className="review-btn reject"
-                        onClick={() => {
-                          const comment = prompt('Please provide a reason for rejection:');
-                          if (comment !== null) {
-                            handleReview(assignment._id, 'reject', comment);
-                          }
-                        }}
-                      >
-                        Request Changes
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Admin Approval Section - Only for admins on reviewer-approved assignments */}
-                {userRole === 'admin' && assignment.status === 'approved-by-reviewer' && (
-                  <div className="admin-approval-section">
-                    <h4>Admin Final Approval</h4>
-                    <p>Document has been approved by reviewer and needs admin approval to complete.</p>
-                    <div className="admin-actions">
-                      <button 
-                        className="review-btn approve"
-                        onClick={() => {
-                          const comment = prompt('Add admin approval comment (optional):') || 'Approved by admin';
-                          handleAdminApprove(assignment._id, comment);
-                        }}
-                      >
-                        Final Approve & Complete
-                      </button>
+                      <button className="review-btn approve">Approve</button>
+                      <button className="review-btn reject">Request Changes</button>
                     </div>
                   </div>
                 )}
