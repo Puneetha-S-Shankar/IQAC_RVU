@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Task = require('../models/Task');
+const Notification = require('../models/Notification');
 const { authenticateToken } = require('./auth');
 
 // Middleware to check if user is admin
@@ -103,6 +104,26 @@ router.post('/assignments', authenticateToken, requireAdmin, async (req, res) =>
     });
 
     await newTask.save();
+
+    // Create notification for the initiator
+    const initiatorNotification = new Notification({
+      userId: initiator._id,
+      type: 'task_assigned',
+      title: 'New Task Assigned',
+      message: `You have been assigned as initiator for: ${assignmentType}`,
+      taskId: newTask._id
+    });
+    await initiatorNotification.save();
+
+    // Create notification for the reviewer
+    const reviewerNotification = new Notification({
+      userId: reviewer._id,
+      type: 'task_assigned',
+      title: 'New Review Assignment',
+      message: `You have been assigned as reviewer for: ${assignmentType}`,
+      taskId: newTask._id
+    });
+    await reviewerNotification.save();
 
     // Populate the created task for response
     const populatedTask = await Task.findById(newTask._id)

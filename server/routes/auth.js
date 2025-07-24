@@ -50,10 +50,14 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
+    // Hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
     const userData = {
       username,
       email,
-      password, // In production, this should be hashed
+      password: hashedPassword, // Store hashed password
       firstName,
       lastName,
       role: role || 'user', // Use provided role or default to 'user'

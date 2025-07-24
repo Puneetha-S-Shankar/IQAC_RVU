@@ -83,20 +83,20 @@ router.put('/:taskId/submit', async (req, res) => {
     const task = await Task.findByIdAndUpdate(
       taskId,
       {
-        status: 'submitted',
-        submittedFile: fileId,
+        status: 'file-uploaded',
+        fileId: fileId,
         submittedAt: new Date()
       },
       { new: true }
-    ).populate('assignedBy', 'firstName lastName email');
+    ).populate('assignedToReviewer', 'firstName lastName email');
     
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
     
-    // Create notification for admin/assigned by user
+    // Create notification for the reviewer
     const notification = new Notification({
-      userId: task.assignedBy._id,
+      userId: task.assignedToReviewer._id,
       type: 'file_submitted',
       title: 'File Submitted for Review',
       message: `${task.title} has been submitted and awaits your review`,
@@ -125,20 +125,20 @@ router.put('/:taskId/approve', async (req, res) => {
     const task = await Task.findByIdAndUpdate(
       taskId,
       {
-        status: 'approved',
+        status: 'approved-by-reviewer',
         reviewedBy: reviewedBy,
         reviewedAt: new Date()
       },
       { new: true }
-    ).populate('assignedTo', 'firstName lastName email');
+    ).populate('assignedToInitiator', 'firstName lastName email');
     
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
     
-    // Create notification for the user
+    // Create notification for the initiator
     const notification = new Notification({
-      userId: task.assignedTo._id,
+      userId: task.assignedToInitiator._id,
       type: 'file_approved',
       title: 'File Approved',
       message: `Your submission for "${task.title}" has been approved`,
@@ -172,15 +172,15 @@ router.put('/:taskId/reject', async (req, res) => {
         rejectionReason: rejectionReason
       },
       { new: true }
-    ).populate('assignedTo', 'firstName lastName email');
+    ).populate('assignedToInitiator', 'firstName lastName email');
     
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
     
-    // Create notification for the user
+    // Create notification for the initiator
     const notification = new Notification({
-      userId: task.assignedTo._id,
+      userId: task.assignedToInitiator._id,
       type: 'file_rejected',
       title: 'File Rejected',
       message: `Your submission for "${task.title}" has been rejected. Reason: ${rejectionReason}`,
