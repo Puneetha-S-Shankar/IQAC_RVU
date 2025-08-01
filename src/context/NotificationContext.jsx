@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const NotificationContext = createContext();
 
@@ -12,6 +13,22 @@ export const useNotifications = () => {
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
+  const navigate = useNavigate();
+
+  const handleNotificationClick = (notification) => {
+    // Mark as read
+    markAsRead(notification._id || notification.id);
+    
+    // Navigate to Teaching and Learning page for task-related notifications
+    if (notification.taskId || 
+        notification.type === 'task_assigned' || 
+        notification.type === 'file_submitted' || 
+        notification.type === 'file_approved' || 
+        notification.type === 'file_rejected' || 
+        notification.type === 'reviewer_approved') {
+      navigate('/teaching-and-learning');
+    }
+  };
 
   const addNotification = (notification) => {
     const id = Date.now().toString();
@@ -35,13 +52,13 @@ export const NotificationProvider = ({ children }) => {
   };
 
   const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
+    setNotifications(prev => prev.filter(notif => (notif._id || notif.id) !== id));
   };
 
   const markAsRead = (id) => {
     setNotifications(prev => 
       prev.map(notif => 
-        notif.id === id ? { ...notif, read: true } : notif
+        (notif._id || notif.id) === id ? { ...notif, read: true } : notif
       )
     );
   };
@@ -51,7 +68,7 @@ export const NotificationProvider = ({ children }) => {
   };
 
   const getUnreadCount = () => {
-    return notifications.filter(notif => !notif.read).length;
+    return notifications.filter(notif => !(notif.read || notif.isRead)).length;
   };
 
   // Fetch notifications from server on mount
@@ -107,7 +124,8 @@ export const NotificationProvider = ({ children }) => {
     markAsRead,
     clearAllNotifications,
     getUnreadCount,
-    fetchNotifications
+    fetchNotifications,
+    handleNotificationClick
   };
 
   return (

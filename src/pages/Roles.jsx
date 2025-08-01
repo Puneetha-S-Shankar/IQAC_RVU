@@ -36,6 +36,10 @@ const Roles = () => {
   const [selectedInitiator, setSelectedInitiator] = useState(null);
   const [selectedReviewer, setSelectedReviewer] = useState(null);
 
+  // Edit assignment modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState(null);
+
   // Assignment types
   const assignmentTypes = [
     'Course Document 1',
@@ -106,12 +110,66 @@ const Roles = () => {
     setTimeout(() => setMessage({ text: '', type: '' }), 5000);
   };
 
+  // Edit assignment functions
+  const handleEditAssignment = (assignment) => {
+    setEditingAssignment({
+      ...assignment,
+      assignedToInitiator: assignment.assignedToInitiator?._id || '',
+      assignedToReviewer: assignment.assignedToReviewer?._id || '',
+      deadline: new Date(assignment.deadline).toISOString().split('T')[0] // Format for date input
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateAssignment = async () => {
+    try {
+      // Check if same person is assigned as both initiator and reviewer
+      if (editingAssignment.assignedToInitiator === editingAssignment.assignedToReviewer) {
+        showMessage('Initiator and reviewer cannot be the same person', 'error');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/assignments/assignments/${editingAssignment._id}/update`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          assignedToInitiator: editingAssignment.assignedToInitiator,
+          assignedToReviewer: editingAssignment.assignedToReviewer,
+          deadline: editingAssignment.deadline,
+          courseCode: editingAssignment.courseCode,
+          courseName: editingAssignment.courseName
+        })
+      });
+
+      if (response.ok) {
+        showMessage('Assignment updated successfully!', 'success');
+        setShowEditModal(false);
+        await fetchAssignments();
+      } else {
+        const errorData = await response.json();
+        showMessage(errorData.error || 'Failed to update assignment', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating assignment:', error);
+      showMessage('Error updating assignment', 'error');
+    }
+  };
+
   const handleAssignmentSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     if (!selectedInitiator || !selectedReviewer) {
       showMessage('Please select both initiator and reviewer', 'error');
+      setLoading(false);
+      return;
+    }
+
+    if (selectedInitiator._id === selectedReviewer._id) {
+      showMessage('Initiator and reviewer cannot be the same person', 'error');
       setLoading(false);
       return;
     }
@@ -384,6 +442,7 @@ const Roles = () => {
                 <th>Status</th>
                 <th>Deadline</th>
                 <th>Created</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -433,6 +492,15 @@ const Roles = () => {
                     {isDeadlineNear(assignment.deadline) && !isOverdue(assignment.deadline) && <><br /><small>DUE SOON</small></>}
                   </td>
                   <td>{formatDate(assignment.createdAt)}</td>
+                  <td>
+                    <button 
+                      className="edit-btn"
+                      onClick={() => handleEditAssignment(assignment)}
+                      title="Edit Assignment"
+                    >
+                      ✏️ Edit
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -459,6 +527,7 @@ const Roles = () => {
                 <th>Subrole</th>
                 <th>Course Code</th>
                 <th>Course Name</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -486,8 +555,42 @@ const Roles = () => {
                       <option value="reviewer">Reviewer</option>
                     </select>
                   </td>
-                  <td>{user.courseCode || '-'}</td>
-                  <td>{user.courseName || '-'}</td>
+                  <td>
+                    <input
+                      type="text"
+                      value={user.courseCode || ''}
+                      onChange={(e) => handleUserRoleUpdate(user._id, 'courseCode', e.target.value)}
+                      placeholder="Course Code"
+                      style={{ width: '100px' }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={user.courseName || ''}
+                      onChange={(e) => handleUserRoleUpdate(user._id, 'courseName', e.target.value)}
+                      placeholder="Course Name"
+                      style={{ width: '150px' }}
+                    />
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => showMessage('User updated successfully!', 'success')}
+                      style={{ 
+                        padding: '5px 10px', 
+                        fontSize: '12px',
+                        backgroundColor: '#D5AB5D',
+                        border: 'none',
+                        borderRadius: '4px',
+                        color: 'white',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Update
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -639,6 +742,95 @@ const Roles = () => {
       {activeTab === 'records' && renderRecords()}
       {activeTab === 'create' && renderUserCreate()}
       {activeTab === 'users' && renderUserRoles()}
+
+      {/* Assignment Edit Modal */}
+      {showEditModal && editingAssignment && (
+        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="modal-content edit-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Edit Assignment</h3>
+              <button 
+                className="modal-close"
+                onClick={() => setShowEditModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Course Code:</label>
+                <input
+                  type="text"
+                  value={editingAssignment.courseCode}
+                  onChange={(e) => setEditingAssignment({...editingAssignment, courseCode: e.target.value})}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Course Name:</label>
+                <input
+                  type="text"
+                  value={editingAssignment.courseName}
+                  onChange={(e) => setEditingAssignment({...editingAssignment, courseName: e.target.value})}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Initiator:</label>
+                <select
+                  value={editingAssignment.assignedToInitiator}
+                  onChange={(e) => setEditingAssignment({...editingAssignment, assignedToInitiator: e.target.value})}
+                >
+                  <option value="">Select Initiator</option>
+                  {users.filter(user => user.role !== 'admin').map(user => (
+                    <option key={user._id} value={user._id}>
+                      {user.name} ({user.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label>Reviewer:</label>
+                <select
+                  value={editingAssignment.assignedToReviewer}
+                  onChange={(e) => setEditingAssignment({...editingAssignment, assignedToReviewer: e.target.value})}
+                >
+                  <option value="">Select Reviewer</option>
+                  {users.filter(user => user.role !== 'admin').map(user => (
+                    <option key={user._id} value={user._id}>
+                      {user.name} ({user.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label>Deadline:</label>
+                <input
+                  type="date"
+                  value={editingAssignment.deadline}
+                  onChange={(e) => setEditingAssignment({...editingAssignment, deadline: e.target.value})}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShowEditModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={handleUpdateAssignment}
+              >
+                Update Assignment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

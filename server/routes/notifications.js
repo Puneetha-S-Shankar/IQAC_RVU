@@ -1,6 +1,28 @@
 const express = require('express');
 const Notification = require('../models/Notification');
+const { authenticateToken } = require('./auth');
 const router = express.Router();
+
+// Get notifications for current user
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { unread } = req.query;
+    
+    const query = { userId };
+    if (unread === 'true') query.isRead = false;
+    
+    const notifications = await Notification.find(query)
+      .populate('taskId', 'title category courseCode courseName')
+      .sort({ createdAt: -1 })
+      .limit(50); // Limit to last 50 notifications
+    
+    res.json(notifications);
+  } catch (error) {
+    console.error('Get notifications error:', error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
+  }
+});
 
 // Get notifications for a user
 router.get('/user/:userId', async (req, res) => {

@@ -1,11 +1,11 @@
 import React, { useState, useContext } from 'react';
-import { NotificationContext } from '../context/NotificationContext';
+import { useNotifications } from '../context/NotificationContext';
 import NotificationCenter from './NotificationCenter';
 import './NotificationBell.css';
 
 const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { getUnreadCount } = useContext(NotificationContext);
+  const { getUnreadCount } = useNotifications();
   
   const unreadCount = getUnreadCount();
 

@@ -1,9 +1,9 @@
 import React, { useContext } from 'react';
-import { NotificationContext } from '../context/NotificationContext';
+import { useNotifications } from '../context/NotificationContext';
 import './NotificationCenter.css';
 
 const NotificationCenter = ({ slideIn = false }) => {
-  const { notifications, markAsRead, removeNotification } = useContext(NotificationContext);
+  const { notifications, markAsRead, removeNotification, handleNotificationClick } = useNotifications();
 
   return (
     <div className={`notification-center ${slideIn ? 'slide-in' : ''}`}>
@@ -15,27 +15,34 @@ const NotificationCenter = ({ slideIn = false }) => {
         ) : (
           notifications.map((notification) => (
             <div
-              key={notification.id}
-              className={`notification-item ${notification.read ? 'read' : 'unread'}`}
+              key={notification._id || notification.id}
+              className={`notification-item ${(notification.read || notification.isRead) ? 'read' : 'unread'} clickable`}
+              onClick={() => handleNotificationClick(notification)}
             >
               <div className="notification-content">
                 <div className="notification-title">{notification.title}</div>
                 <div className="notification-message">{notification.message}</div>
                 <div className="notification-time">
-                  {new Date(notification.timestamp).toLocaleString()}
+                  {new Date(notification.createdAt || notification.timestamp).toLocaleString()}
                 </div>
               </div>
               <div className="notification-actions">
-                {!notification.read && (
+                {!(notification.read || notification.isRead) && (
                   <button
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      markAsRead(notification._id || notification.id);
+                    }}
                     className="mark-read-btn"
                   >
                     Mark as Read
                   </button>
                 )}
                 <button
-                  onClick={() => removeNotification(notification.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeNotification(notification._id || notification.id);
+                  }}
                   className="clear-btn"
                 >
                   ×
