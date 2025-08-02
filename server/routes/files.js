@@ -269,28 +269,45 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Download file from GridFS
+// Download assignment file from uploads bucket
 router.get('/:id/download', async (req, res) => {
   try {
-    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
-      bucketName: 'files'
-    });
     const db = mongoose.connection.db;
-    const file = await db.collection('files.files').findOne({ _id: new ObjectId(req.params.id) });
+    const fileId = req.params.id;
+    
+    // First try uploads bucket (for assignment files)
+    let file = await db.collection('uploads.files').findOne({ _id: new ObjectId(fileId) });
+    let bucketName = 'uploads';
+    
+    // If not found, try files bucket (for general files)
+    if (!file) {
+      file = await db.collection('files.files').findOne({ _id: new ObjectId(fileId) });
+      bucketName = 'files';
+    }
+    
     if (!file) {
       return res.status(404).json({ error: 'File not found' });
     }
-    res.set('Content-Type', file.contentType || file.metadata.contentType);
+    
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+      bucketName: bucketName
+    });
+    
+    res.set('Content-Type', file.contentType || file.metadata?.contentType || 'application/pdf');
     res.set('Content-Disposition', `inline; filename="${file.filename}"`);
     const downloadStream = bucket.openDownloadStream(file._id);
     downloadStream.pipe(res);
     downloadStream.on('error', (err) => {
       console.error('GridFS download error:', err);
-      res.status(500).json({ error: 'Server error during file download' });
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Server error during file download' });
+      }
     });
   } catch (error) {
     console.error('Download file error:', error);
-    res.status(500).json({ error: 'Server error during file download' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Server error during file download' });
+    }
   }
 });
 

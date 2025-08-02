@@ -567,4 +567,49 @@ router.post('/assignments/:id/admin-approve', authenticateToken, requireAdmin, a
   }
 });
 
+// Get completed assignments for document display (Admin - all completed)
+router.get('/assignments/completed', authenticateToken, async (req, res) => {
+  try {
+    const assignments = await Task.find({ 
+      status: 'completed' 
+    })
+      .populate('assignedToInitiator', 'username email firstName lastName')
+      .populate('assignedToReviewer', 'username email firstName lastName')
+      .populate('assignedBy', 'username email firstName lastName')
+      .sort({ updatedAt: -1 });
+    
+    res.json(assignments);
+  } catch (error) {
+    console.error('Error fetching completed assignments:', error);
+    res.status(500).json({ error: 'Failed to fetch completed assignments' });
+  }
+});
+
+// Get completed assignments for user's course
+router.get('/assignments/completed/my-course', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // Find user's course info
+    const user = await User.findById(userId);
+    if (!user || !user.courseCode) {
+      return res.status(400).json({ error: 'User course information not found' });
+    }
+    
+    const assignments = await Task.find({ 
+      status: 'completed',
+      courseCode: user.courseCode
+    })
+      .populate('assignedToInitiator', 'username email firstName lastName')
+      .populate('assignedToReviewer', 'username email firstName lastName')
+      .populate('assignedBy', 'username email firstName lastName')
+      .sort({ updatedAt: -1 });
+    
+    res.json(assignments);
+  } catch (error) {
+    console.error('Error fetching user course documents:', error);
+    res.status(500).json({ error: 'Failed to fetch course documents' });
+  }
+});
+
 module.exports = router;

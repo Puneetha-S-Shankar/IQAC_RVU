@@ -24,4 +24,13 @@ const userSchema = new mongoose.Schema({
   lastLogin: { type: Date, default: Date.now }
 });
 
+// Virtual for full name
+userSchema.virtual('name').get(function() {
+  return `${this.firstName || ''} ${this.lastName || ''}`.trim() || this.username || this.email;
+});
+
+// Include virtuals when converting to JSON
+userSchema.set('toJSON', { virtuals: true });
+userSchema.set('toObject', { virtuals: true });
+
 module.exports = mongoose.model('User', userSchema); 

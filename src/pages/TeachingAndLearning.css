@@ -21,7 +21,39 @@
 .teaching-learning-subtitle {
   color: #ccc;
   font-size: 1.1rem;
-  margin-bottom: 0;
+  margin-bottom: 1rem;
+}
+
+.subtabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.subtab {
+  background: #223b47;
+  color: #ccc;
+  border: 2px solid #334a57;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.subtab:hover {
+  background: #2a4752;
+  color: #D5AB5D;
+  border-color: #D5AB5D;
+}
+
+.subtab.active {
+  background: #D5AB5D;
+  color: #182E37;
+  border-color: #D5AB5D;
+  font-weight: bold;
 }
 
 .message {
@@ -537,6 +569,268 @@
 
 .form-group {
   margin-bottom: 1rem;
+}
+
+/* Documents Tab Styles */
+.documents-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.documents-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.documents-filter {
+  background: #223b47;
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 300px;
+}
+
+.documents-filter label {
+  color: #D5AB5D;
+  font-weight: 500;
+  margin: 0;
+}
+
+.documents-filter select {
+  background: #182E37;
+  color: #fff;
+  border: 1px solid #334a57;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.documents-filter select:focus {
+  outline: none;
+  border-color: #D5AB5D;
+}
+
+.merge-section {
+  background: #223b47;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 250px;
+}
+
+.merge-btn {
+  background: linear-gradient(135deg, #D5AB5D, #C19A4A);
+  color: #182E37;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.merge-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #E6BC6E, #D2A755);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(213, 171, 93, 0.3);
+}
+
+.merge-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.merge-info {
+  color: #ccc;
+  font-size: 0.85rem;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.document-card {
+  background: #223b47;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #334a57;
+  transition: all 0.3s ease;
+}
+
+.document-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border-color: #D5AB5D;
+}
+
+.document-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.document-header h3 {
+  color: #D5AB5D;
+  font-size: 1.4rem;
+  margin: 0;
+  font-weight: bold;
+}
+
+.completion-date {
+  background: #28a745;
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.document-details h4 {
+  color: #fff;
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.document-description {
+  color: #ccc;
+  margin: 0.5rem 0;
+  line-height: 1.4;
+}
+
+.document-roles {
+  margin: 1rem 0;
+}
+
+.document-roles .role-info {
+  color: #bbb;
+  font-size: 0.9rem;
+  margin: 0.3rem 0;
+}
+
+.document-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.no-documents {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: #223b47;
+  border-radius: 12px;
+  border: 2px dashed #334a57;
+}
+
+.no-documents h3 {
+  color: #D5AB5D;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.no-documents p {
+  color: #ccc;
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Merge Modal Styles */
+.merge-modal .modal-content {
+  min-width: 400px;
+  max-width: 500px;
+}
+
+.merge-progress {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.progress-text {
+  color: #D5AB5D;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.progress-bar {
+  background: #334a57;
+  border-radius: 10px;
+  height: 20px;
+  overflow: hidden;
+  margin: 1rem 0;
+  position: relative;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, #D5AB5D, #C19A4A);
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progress-percent {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.merge-complete {
+  background: #28a745;
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.merge-complete p {
+  margin: 0.5rem 0;
+}
+
+.merge-complete p:first-child {
+  font-weight: bold;
+  font-size: 1.1rem;
 }
 
 .form-group label {

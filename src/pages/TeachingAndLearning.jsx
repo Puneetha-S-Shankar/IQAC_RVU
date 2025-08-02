@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { mergePDFs, downloadPDF } from '../utils/pdfUtils';
 import './TeachingAndLearning.css';
 
 const API_BASE = 'http://localhost:5000';
@@ -21,6 +22,17 @@ const TeachingAndLearning = () => {
   const [reviewComment, setReviewComment] = useState('');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewFileUrl, setPreviewFileUrl] = useState('');
+  
+  // Subtab management
+  const [activeTab, setActiveTab] = useState('assignments');
+  const [documents, setDocuments] = useState([]);
+  const [courseFilter, setCourseFilter] = useState('');
+  const [availableCourses, setAvailableCourses] = useState([]);
+  
+  // PDF merge functionality
+  const [merging, setMerging] = useState(false);
+  const [mergeProgress, setMergeProgress] = useState({ message: '', percent: 0 });
+  const [showMergeModal, setShowMergeModal] = useState(false);
 
   // Get user info from AuthContext or localStorage
   useEffect(() => {
@@ -61,6 +73,13 @@ const TeachingAndLearning = () => {
     }
   }, [isAuthenticated, currentUser]);
 
+  // Load documents when switching to documents tab
+  useEffect(() => {
+    if (activeTab === 'documents' && isAuthenticated && currentUser) {
+      fetchApprovedDocuments();
+    }
+  }, [activeTab, isAuthenticated, currentUser]);
+
   const fetchUserAssignments = async () => {
     try {
       // Use different endpoints based on user role
@@ -84,6 +103,43 @@ const TeachingAndLearning = () => {
     } catch (error) {
       console.error('Error fetching assignments:', error);
       showMessage('Error fetching assignments', 'error');
+    }
+  };
+
+  const fetchApprovedDocuments = async () => {
+    try {
+      // For admin: get all completed assignments
+      // For users: get completed assignments for their course
+      const endpoint = (userRole === 'admin' || userRole === 'super_admin' || currentUser?.role === 'super_admin')
+        ? `http://localhost:5000/api/assignments/assignments/completed`
+        : `http://localhost:5000/api/assignments/assignments/completed/my-course`;
+        
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const documents = await response.json();
+        console.log('Fetched documents:', documents); // Debug log
+        setDocuments(documents || []);
+        
+        // Extract unique courses for filtering (admin only)
+        if (userRole === 'admin' || userRole === 'super_admin' || currentUser?.role === 'super_admin') {
+          const courses = [...new Set((documents || []).map(doc => doc.courseCode))];
+          setAvailableCourses(courses);
+        }
+      } else {
+        const errorData = await response.json();
+        console.warn('Failed to fetch documents:', errorData.error || 'Unknown error');
+        setDocuments([]);
+        showMessage(errorData.error || 'Failed to fetch documents', 'error');
+      }
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      setDocuments([]);
+      showMessage('Error fetching documents', 'error');
     }
   };
 
@@ -307,6 +363,69 @@ const TeachingAndLearning = () => {
     await handleAdminApprove(assignmentId, '');
   };
 
+  // PDF Merge functionality
+  const handleMergeDocuments = async () => {
+    try {
+      setMerging(true);
+      setShowMergeModal(true);
+      setMergeProgress({ message: 'Preparing documents for merge...', percent: 0 });
+
+      // Get documents to merge (filtered if courseFilter is set)
+      const documentsToMerge = documents
+        .filter(doc => !courseFilter || doc.courseCode === courseFilter)
+        .filter(doc => doc.fileId); // Only documents with files
+
+      if (documentsToMerge.length === 0) {
+        throw new Error('No documents available to merge');
+      }
+
+      // Prepare PDF URLs with titles
+      const pdfUrls = documentsToMerge.map(doc => ({
+        url: `http://localhost:5000/api/files/${doc.fileId}/download`,
+        title: `${doc.courseCode} - ${doc.courseName}`,
+        courseCode: doc.courseCode
+      }));
+
+      // Merge PDFs
+      const mergedPdfBytes = await mergePDFs(
+        pdfUrls, 
+        localStorage.getItem('token'),
+        (message, percent) => {
+          setMergeProgress({ message, percent });
+        }
+      );
+
+      // Generate filename
+      const timestamp = new Date().toISOString().split('T')[0];
+      const coursePrefix = courseFilter ? `${courseFilter}_` : 'All_Courses_';
+      const filename = `${coursePrefix}Merged_Documents_${timestamp}.pdf`;
+
+      // Download the merged PDF
+      downloadPDF(mergedPdfBytes, filename);
+
+      setMergeProgress({ message: 'Download started!', percent: 100 });
+      showMessage(`Successfully merged ${documentsToMerge.length} documents!`, 'success');
+
+      // Close modal after a short delay
+      setTimeout(() => {
+        setShowMergeModal(false);
+        setMerging(false);
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error merging documents:', error);
+      showMessage(`Error merging documents: ${error.message}`, 'error');
+      setMerging(false);
+      setShowMergeModal(false);
+    }
+  };
+
+  const getDocumentsToMergeCount = () => {
+    return documents
+      .filter(doc => !courseFilter || doc.courseCode === courseFilter)
+      .filter(doc => doc.fileId).length;
+  };
+
   // If not authorized, show loading or redirect message
   if (!isAuthenticated || userRole === 'viewer') {
     return (
@@ -331,6 +450,22 @@ const TeachingAndLearning = () => {
         <p className="teaching-learning-subtitle">
           {userRole === 'admin' ? 'Manage all course assignments' : 'Your assigned courses and documents'}
         </p>
+        
+        {/* Subtab Navigation */}
+        <div className="subtabs">
+          <button 
+            className={`subtab ${activeTab === 'assignments' ? 'active' : ''}`}
+            onClick={() => setActiveTab('assignments')}
+          >
+            Assignments
+          </button>
+          <button 
+            className={`subtab ${activeTab === 'documents' ? 'active' : ''}`}
+            onClick={() => setActiveTab('documents')}
+          >
+            Documents
+          </button>
+        </div>
       </div>
 
       {message.text && (
@@ -339,178 +474,270 @@ const TeachingAndLearning = () => {
         </div>
       )}
 
-      <div className="assignments-container">
-        {assignments.length === 0 ? (
-          <div className="no-assignments">
-            <h3>No assignments found</h3>
-            <p>
-              {userRole === 'admin' 
-                ? 'Create assignments in the Role Management section.'
-                : 'You have no course assignments at this time.'}
-            </p>
-          </div>
-        ) : (
-          <div className="assignments-grid">
-            {assignments.map((assignment) => (
-              <div key={assignment._id} className="assignment-card">
-                <div className="assignment-header">
-                  <h3>{assignment.courseCode}</h3>
-                  <div className="header-actions">
-                    <span 
-                      className="status-badge" 
-                      style={{ backgroundColor: getStatusColor(assignment.status) }}
-                    >
-                      {getStatusDisplay(assignment.status)}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="assignment-details">
-                  <h4>{assignment.courseName}</h4>
-                  <p className="assignment-description">{assignment.description}</p>
-                  
-                  <div className="assignment-roles">
-                    <div className="role-info">
-                      <strong>Initiator:</strong> {assignment.assignedToInitiator?.name} ({assignment.assignedToInitiator?.email})
-                    </div>
-                    <div className="role-info">
-                      <strong>Reviewer:</strong> {assignment.assignedToReviewer?.name} ({assignment.assignedToReviewer?.email})
-                    </div>
-                  </div>
-                  
-                  <div className="assignment-deadline" style={{
-                    color: isOverdue(assignment.deadline) ? '#dc3545' : 
-                           isDeadlineNear(assignment.deadline) ? '#ffc107' : '#D5AB5D'
-                  }}>
-                    <strong>Deadline:</strong> {formatDate(assignment.deadline)}
-                    {isOverdue(assignment.deadline) && <span className="overdue"> (OVERDUE)</span>}
-                    {isDeadlineNear(assignment.deadline) && !isOverdue(assignment.deadline) && <span className="due-soon"> (DUE SOON)</span>}
-                  </div>
-                </div>
-
-                {/* File Upload Section - Only for initiators */}
-                {canUploadFile(assignment) && (
-                  <div className="upload-section">
-                    <h4>Upload Course Document</h4>
-                    <div className="file-upload-area">
-                      <input
-                        type="file"
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                        onChange={(e) => handleFileSelect(assignment._id, e.target.files[0])}
-                        disabled={uploadingAssignmentId === assignment._id}
-                      />
-                      <button
-                        className="upload-btn"
-                        onClick={() => handleFileUpload(assignment._id)}
-                        disabled={!selectedFiles[assignment._id] || uploadingAssignmentId === assignment._id}
+      {/* Assignments Tab */}
+      {activeTab === 'assignments' && (
+        <div className="assignments-container">
+          {assignments.length === 0 ? (
+            <div className="no-assignments">
+              <h3>No assignments found</h3>
+              <p>
+                {userRole === 'admin' 
+                  ? 'Create assignments in the Role Management section.'
+                  : 'You have no course assignments at this time.'}
+              </p>
+            </div>
+          ) : (
+            <div className="assignments-grid">
+              {assignments.map((assignment) => (
+                <div key={assignment._id} className="assignment-card">
+                  <div className="assignment-header">
+                    <h3>{assignment.courseCode}</h3>
+                    <div className="header-actions">
+                      <span 
+                        className="status-badge" 
+                        style={{ backgroundColor: getStatusColor(assignment.status) }}
                       >
-                        {uploadingAssignmentId === assignment._id ? 'Uploading...' : 'Upload Document'}
-                      </button>
+                        {getStatusDisplay(assignment.status)}
+                      </span>
                     </div>
-                    {uploadStatus[assignment._id] && (
-                      <div className={`upload-status ${uploadStatus[assignment._id].toLowerCase()}`}>
-                        {uploadStatus[assignment._id]}
-                      </div>
-                    )}
                   </div>
-                )}
-
-                {/* Review Section - Only for reviewers */}
-                {canReview(assignment) && (
-                  <div className="review-section">
-                    <h4>Review Document</h4>
-                    <p>Document has been uploaded and is ready for review.</p>
+                  
+                  <div className="assignment-details">
+                    <h4>{assignment.courseName}</h4>
+                    <p className="assignment-description">{assignment.description}</p>
                     
-                    {/* Preview Button */}
-                    {assignment.fileId && (
-                      <div className="preview-section">
-                        <button 
-                          className="preview-btn"
-                          onClick={() => handlePreviewDocument(assignment)}
+                    <div className="assignment-roles">
+                      <div className="role-info">
+                        <strong>Initiator:</strong> {assignment.assignedToInitiator?.name} ({assignment.assignedToInitiator?.email})
+                      </div>
+                      <div className="role-info">
+                        <strong>Reviewer:</strong> {assignment.assignedToReviewer?.name} ({assignment.assignedToReviewer?.email})
+                      </div>
+                    </div>
+                    
+                    <div className="assignment-deadline" style={{
+                      color: isOverdue(assignment.deadline) ? '#dc3545' : 
+                             isDeadlineNear(assignment.deadline) ? '#ffc107' : '#D5AB5D'
+                    }}>
+                      <strong>Deadline:</strong> {formatDate(assignment.deadline)}
+                      {isOverdue(assignment.deadline) && <span className="overdue"> (OVERDUE)</span>}
+                      {isDeadlineNear(assignment.deadline) && !isOverdue(assignment.deadline) && <span className="due-soon"> (DUE SOON)</span>}
+                    </div>
+                  </div>
+
+                  {/* File Upload Section - Only for initiators */}
+                  {canUploadFile(assignment) && (
+                    <div className="upload-section">
+                      <h4>Upload Course Document</h4>
+                      <div className="file-upload-area">
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                          onChange={(e) => handleFileSelect(assignment._id, e.target.files[0])}
+                          disabled={uploadingAssignmentId === assignment._id}
+                        />
+                        <button
+                          className="upload-btn"
+                          onClick={() => handleFileUpload(assignment._id)}
+                          disabled={!selectedFiles[assignment._id] || uploadingAssignmentId === assignment._id}
                         >
-                          📄 Preview Document
+                          {uploadingAssignmentId === assignment._id ? 'Uploading...' : 'Upload Document'}
                         </button>
                       </div>
-                    )}
-                    
-                    <div className="review-actions">
-                      <button 
-                        className="review-btn approve"
-                        onClick={() => openCommentModal(assignment._id, 'approve')}
-                      >
-                        Approve
-                      </button>
-                      <button 
-                        className="review-btn reject"
-                        onClick={() => openCommentModal(assignment._id, 'reject')}
-                      >
-                        Request Changes
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Admin Approval Section - Only for admins on reviewer-approved assignments */}
-                {canAdminApprove(assignment) && (
-                  <div className="admin-approval-section">
-                    <h4>Admin Final Approval</h4>
-                    <p>Document has been approved by reviewer and needs admin approval to complete.</p>
-                    <div className="admin-actions">
-                      <button 
-                        className="review-btn approve"
-                        onClick={() => handleAdminApproval(assignment._id)}
-                      >
-                        Final Approve & Publish
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Assignment Information */}
-                <div className="assignment-info">
-                  {assignment.status === 'assigned' && !canUploadFile(assignment) && (
-                    <div className="status-message">
-                      {assignment.assignedToInitiator?.email === currentUser?.email 
-                        ? 'Awaiting your file upload'
-                        : 'Awaiting initiator file upload'
-                      }
+                      {uploadStatus[assignment._id] && (
+                        <div className={`upload-status ${uploadStatus[assignment._id].toLowerCase()}`}>
+                          {uploadStatus[assignment._id]}
+                        </div>
+                      )}
                     </div>
                   )}
-                  
-                  {assignment.status === 'file-uploaded' && !canReview(assignment) && (
-                    <div className="status-message">
-                      {assignment.assignedToReviewer?.email === currentUser?.email 
-                        ? 'Ready for your review'
-                        : 'Document under review'
-                      }
+
+                  {/* Review Section - Only for reviewers */}
+                  {canReview(assignment) && (
+                    <div className="review-section">
+                      <h4>Review Document</h4>
+                      <p>Document has been uploaded and is ready for review.</p>
+                      
+                      {/* Preview Button */}
                       {assignment.fileId && (
+                        <div className="preview-section">
+                          <button 
+                            className="preview-btn"
+                            onClick={() => handlePreviewDocument(assignment)}
+                          >
+                            📄 Preview Document
+                          </button>
+                        </div>
+                      )}
+                      
+                      <div className="review-actions">
                         <button 
-                          className="preview-btn small"
-                          onClick={() => handlePreviewDocument(assignment)}
+                          className="review-btn approve"
+                          onClick={() => openCommentModal(assignment._id, 'approve')}
+                        >
+                          Approve
+                        </button>
+                        <button 
+                          className="review-btn reject"
+                          onClick={() => openCommentModal(assignment._id, 'reject')}
+                        >
+                          Request Changes
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Admin Approval Section - Only for admins on reviewer-approved assignments */}
+                  {canAdminApprove(assignment) && (
+                    <div className="admin-approval-section">
+                      <h4>Admin Final Approval</h4>
+                      <p>Document has been approved by reviewer and needs admin approval to complete.</p>
+                      <div className="admin-actions">
+                        <button 
+                          className="review-btn approve"
+                          onClick={() => handleAdminApproval(assignment._id)}
+                        >
+                          Final Approve & Publish
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Assignment Information */}
+                  <div className="assignment-info">
+                    {assignment.status === 'assigned' && !canUploadFile(assignment) && (
+                      <div className="status-message">
+                        {assignment.assignedToInitiator?.email === currentUser?.email 
+                          ? 'Awaiting your file upload'
+                          : 'Awaiting initiator file upload'
+                        }
+                      </div>
+                    )}
+                    
+                    {assignment.status === 'file-uploaded' && !canReview(assignment) && (
+                      <div className="status-message">
+                        {assignment.assignedToReviewer?.email === currentUser?.email 
+                          ? 'Ready for your review'
+                          : 'Document under review'
+                        }
+                        {assignment.fileId && (
+                          <button 
+                            className="preview-btn small"
+                            onClick={() => handlePreviewDocument(assignment)}
+                          >
+                            📄 View Document
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    
+                    {assignment.status === 'rejected' && (
+                      <div className="status-message rejection">
+                        Document rejected. Reason: {assignment.rejectionReason || 'No reason provided'}
+                      </div>
+                    )}
+                    
+                    {assignment.status === 'completed' && (
+                      <div className="status-message completed">
+                        Document completed and published for course {assignment.courseCode}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Documents Tab */}
+      {activeTab === 'documents' && (
+        <div className="documents-container">
+          {/* Course filter and merge button */}
+          <div className="documents-controls">
+            {currentUser && (userRole === 'admin' || userRole === 'super_admin' || currentUser.role === 'super_admin') && (
+              <div className="documents-filter">
+                <label>Filter by Course:</label>
+                <select
+                  value={courseFilter}
+                  onChange={(e) => setCourseFilter(e.target.value)}
+                >
+                  <option value="">All Courses</option>
+                  {availableCourses.map(course => (
+                    <option key={course} value={course}>{course}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {/* Merge Documents Button */}
+            {documents.length > 0 && getDocumentsToMergeCount() > 1 && (
+              <div className="merge-section">
+                <button 
+                  className="merge-btn"
+                  onClick={handleMergeDocuments}
+                  disabled={merging}
+                >
+                  {merging ? 'Merging...' : `📄 Merge ${getDocumentsToMergeCount()} Documents`}
+                </button>
+                <p className="merge-info">
+                  {courseFilter 
+                    ? `Merge all ${courseFilter} course documents`
+                    : 'Merge all available course documents'
+                  }
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="documents-grid">
+            {documents.length === 0 ? (
+              <div className="no-documents">
+                <h3>No completed documents available</h3>
+                <p>Completed assignments will appear here as final documents.</p>
+              </div>
+            ) : (
+              documents
+                .filter(doc => !courseFilter || doc.courseCode === courseFilter)
+                .map(doc => (
+                  <div key={doc._id} className="document-card">
+                    <div className="document-header">
+                      <h3>{doc.courseCode}</h3>
+                      <span className="completion-date">
+                        {new Date(doc.updatedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    
+                    <div className="document-details">
+                      <h4>{doc.courseName || doc.title || 'Course Document'}</h4>
+                      <p className="document-description">{doc.description}</p>
+                      
+                      <div className="document-roles">
+                        <div className="role-info">
+                          <strong>Submitted by:</strong> {doc.assignedToInitiator?.name || doc.assignedToInitiator?.email || 'Unknown'}
+                        </div>
+                        <div className="role-info">
+                          <strong>Reviewed by:</strong> {doc.assignedToReviewer?.name || doc.assignedToReviewer?.email || 'Unknown'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="document-actions">
+                      {doc.fileId && (
+                        <button 
+                          className="preview-btn"
+                          onClick={() => handlePreviewDocument(doc)}
                         >
                           📄 View Document
                         </button>
                       )}
                     </div>
-                  )}
-                  
-                  {assignment.status === 'rejected' && (
-                    <div className="status-message rejection">
-                      Document rejected. Reason: {assignment.rejectionReason || 'No reason provided'}
-                    </div>
-                  )}
-                  
-                  {assignment.status === 'completed' && (
-                    <div className="status-message completed">
-                      Document completed and published for course {assignment.courseCode}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+                  </div>
+                ))
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Comment Modal */}
       {showCommentModal && (
@@ -596,6 +823,45 @@ const TeachingAndLearning = () => {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Merge Progress Modal */}
+      {showMergeModal && (
+        <div className="modal-overlay">
+          <div className="modal-content merge-modal">
+            <div className="modal-header">
+              <h3>📄 Merging Documents</h3>
+            </div>
+            <div className="modal-body">
+              <div className="merge-progress">
+                <div className="progress-text">{mergeProgress.message}</div>
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill" 
+                    style={{ width: `${mergeProgress.percent}%` }}
+                  ></div>
+                </div>
+                <div className="progress-percent">{Math.round(mergeProgress.percent)}%</div>
+              </div>
+              {mergeProgress.percent === 100 && (
+                <div className="merge-complete">
+                  <p>✅ Merge completed successfully!</p>
+                  <p>The merged PDF has been downloaded to your device.</p>
+                </div>
+              )}
+            </div>
+            {mergeProgress.percent === 100 && (
+              <div className="modal-footer">
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => setShowMergeModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
