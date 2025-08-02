@@ -7,31 +7,29 @@
   font-family: 'Segoe UI', sans-serif;
 }
 
-.notification-header {
+.notification-actions-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid rgba(213, 171, 93, 0.2);
+  gap: 0.5rem;
 }
 
-.notification-header h3 {
-  color: #D5AB5D;
-  margin: 0;
-  font-size: 1.2rem;
-}
-
+.mark-all-read-btn,
 .clear-all-btn {
   background: transparent;
   border: 1px solid #D5AB5D;
   color: #D5AB5D;
-  padding: 0.3rem 0.8rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 4px;
   font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
+.mark-all-read-btn:hover,
 .clear-all-btn:hover {
   background: #D5AB5D;
   color: #182E37;

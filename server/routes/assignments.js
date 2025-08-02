@@ -8,11 +8,18 @@ const { authenticateToken } = require('./auth');
 // Middleware to check if user is admin
 const requireAdmin = async (req, res, next) => {
   try {
+    console.log('Admin check - User:', req.user ? {
+      id: req.user._id,
+      email: req.user.email,
+      role: req.user.role
+    } : 'No user found');
+    
     if (!req.user || req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required' });
     }
     next();
   } catch (error) {
+    console.error('Admin check error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };

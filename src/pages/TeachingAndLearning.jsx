@@ -7,7 +7,7 @@ import './TeachingAndLearning.css';
 const API_BASE = 'http://localhost:5000';
 
 const TeachingAndLearning = () => {
-  const { user: contextUser } = useContext(AuthContext);
+  const { user: contextUser, getToken } = useContext(AuthContext);
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState('viewer');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -34,7 +34,7 @@ const TeachingAndLearning = () => {
   const [mergeProgress, setMergeProgress] = useState({ message: '', percent: 0 });
   const [showMergeModal, setShowMergeModal] = useState(false);
 
-  // Get user info from AuthContext or localStorage
+  // Get user info from AuthContext or storage
   useEffect(() => {
     const checkAuthStatus = () => {
       let user = null;
@@ -42,11 +42,11 @@ const TeachingAndLearning = () => {
       
       if (contextUser) {
         user = contextUser;
-        token = 'logged-in';
+        token = getAuthToken();
       } else {
         try {
-          user = JSON.parse(localStorage.getItem('user') || 'null');
-          token = localStorage.getItem('token');
+          user = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || 'null');
+          token = getAuthToken();
         } catch (error) {
           console.error('Error parsing user data:', error);
         }
@@ -89,7 +89,7 @@ const TeachingAndLearning = () => {
         
       const response = await fetch(endpoint, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getToken()}`
         }
       });
       
@@ -116,7 +116,7 @@ const TeachingAndLearning = () => {
         
       const response = await fetch(endpoint, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getToken()}`
         }
       });
       
@@ -289,7 +289,7 @@ const TeachingAndLearning = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getToken()}`
         },
         body: JSON.stringify({
           action,
@@ -340,7 +340,7 @@ const TeachingAndLearning = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getToken()}`
         },
         body: JSON.stringify({ comment })
       });
@@ -389,7 +389,7 @@ const TeachingAndLearning = () => {
       // Merge PDFs
       const mergedPdfBytes = await mergePDFs(
         pdfUrls, 
-        localStorage.getItem('token'),
+        getToken(),
         (message, percent) => {
           setMergeProgress({ message, percent });
         }

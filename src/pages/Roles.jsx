@@ -1,10 +1,18 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { 
+  COURSE_MAP, 
+  getCourseNameByCode, 
+  getCourseCodeByName, 
+  getAllCourses, 
+  isValidCourseCode,
+  isValidCourseName 
+} from '../utils/courseMapping';
 import './Roles.css';
 
 const Roles = () => {
-  const { user } = useContext(AuthContext);
+  const { user, getToken } = useContext(AuthContext);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('assignments');
   const [loading, setLoading] = useState(false);
@@ -69,7 +77,7 @@ const Roles = () => {
     try {
       const response = await fetch('http://localhost:5000/api/assignments/assignments', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getToken()}`
         }
       });
       
@@ -89,7 +97,7 @@ const Roles = () => {
     try {
       const response = await fetch('http://localhost:5000/api/assignments/users', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getToken()}`
         }
       });
       
@@ -108,6 +116,29 @@ const Roles = () => {
   const showMessage = (text, type) => {
     setMessage({ text, type });
     setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+  };
+
+  // Course code/name handlers
+  const handleCourseCodeChange = (e) => {
+    const courseCode = e.target.value;
+    const courseName = getCourseNameByCode(courseCode);
+    
+    setUserForm({
+      ...userForm, 
+      courseCode,
+      courseName
+    });
+  };
+
+  const handleCourseNameChange = (e) => {
+    const courseName = e.target.value;
+    const courseCode = getCourseCodeByName(courseName);
+    
+    setUserForm({
+      ...userForm, 
+      courseCode: courseCode || userForm.courseCode, // Keep existing code if no match
+      courseName
+    });
   };
 
   // Edit assignment functions
@@ -133,7 +164,7 @@ const Roles = () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getToken()}`
         },
         body: JSON.stringify({
           assignedToInitiator: editingAssignment.assignedToInitiator,
@@ -188,7 +219,7 @@ const Roles = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getToken()}`
         },
         body: JSON.stringify(assignmentData)
       });
@@ -227,7 +258,7 @@ const Roles = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getToken()}`
         },
         body: JSON.stringify(userForm)
       });
@@ -264,7 +295,7 @@ const Roles = () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getToken()}`
         },
         body: JSON.stringify({ [field]: value })
       });
@@ -681,22 +712,31 @@ const Roles = () => {
 
         <div className="form-row">
           <div className="form-group">
-            <label>Course Code</label>
-            <input
-              type="text"
+            <label>Course Code *</label>
+            <select
               value={userForm.courseCode}
-              onChange={(e) => setUserForm({...userForm, courseCode: e.target.value})}
-              placeholder="e.g., CS101"
-            />
+              onChange={handleCourseCodeChange}
+              required
+            >
+              <option value="">Select Course Code</option>
+              {getAllCourses().map(course => (
+                <option key={course.code} value={course.code}>
+                  {course.code}
+                </option>
+              ))}
+            </select>
+            <small className="form-help">Primary key - selecting this will auto-fill course name</small>
           </div>
           <div className="form-group">
             <label>Course Name</label>
             <input
               type="text"
               value={userForm.courseName}
-              onChange={(e) => setUserForm({...userForm, courseName: e.target.value})}
-              placeholder="e.g., Introduction to Computer Science"
+              onChange={handleCourseNameChange}
+              placeholder="Auto-filled when course code is selected"
+              disabled={!!userForm.courseCode}
             />
+            <small className="form-help">Auto-filled from course code selection</small>
           </div>
         </div>
 

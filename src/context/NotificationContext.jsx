@@ -55,16 +55,105 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(prev => prev.filter(notif => (notif._id || notif.id) !== id));
   };
 
-  const markAsRead = (id) => {
+  const markAsRead = async (id) => {
+    // Update local state immediately for better UX
     setNotifications(prev => 
       prev.map(notif => 
-        (notif._id || notif.id) === id ? { ...notif, read: true } : notif
+        (notif._id || notif.id) === id ? { ...notif, read: true, isRead: true } : notif
       )
     );
+
+    // Also update on server if it's a database notification
+    try {
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      if (token && id && id.length === 24) { // Check if it's a MongoDB ObjectId
+        const response = await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          console.warn('Failed to mark notification as read on server');
+          // Revert local state if server update failed
+          setNotifications(prev => 
+            prev.map(notif => 
+              (notif._id || notif.id) === id ? { ...notif, read: false, isRead: false } : notif
+            )
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error marking notification as read on server:', error);
+      // Revert local state if server update failed
+      setNotifications(prev => 
+        prev.map(notif => 
+          (notif._id || notif.id) === id ? { ...notif, read: false, isRead: false } : notif
+        )
+      );
+    }
   };
 
-  const clearAllNotifications = () => {
+  const clearAllNotifications = async () => {
+    // Update local state immediately
     setNotifications([]);
+    
+    // Also clear on server
+    try {
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      if (token) {
+        const response = await fetch('http://localhost:5000/api/notifications/clear-all', {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          console.warn('Failed to clear notifications on server');
+          // Refresh from server to restore state
+          fetchNotifications();
+        }
+      }
+    } catch (error) {
+      console.error('Error clearing notifications on server:', error);
+      // Refresh from server to restore state
+      fetchNotifications();
+    }
+  };
+
+  const markAllAsRead = async () => {
+    // Update local state immediately
+    setNotifications(prev => 
+      prev.map(notif => ({ ...notif, read: true, isRead: true }))
+    );
+    
+    // Also update on server
+    try {
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      if (token) {
+        const response = await fetch(`http://localhost:5000/api/notifications/read-all`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          console.warn('Failed to mark all notifications as read on server');
+          // Refresh from server to restore correct state
+          fetchNotifications();
+        }
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read on server:', error);
+      // Refresh from server to restore correct state
+      fetchNotifications();
+    }
   };
 
   const getUnreadCount = () => {
@@ -102,9 +191,13 @@ export const NotificationProvider = ({ children }) => {
 
   const fetchNotifications = async () => {
     try {
+      // Get token from sessionStorage first, then localStorage
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      if (!token) return;
+
       const response = await fetch('http://localhost:5000/api/notifications', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -122,6 +215,7 @@ export const NotificationProvider = ({ children }) => {
     addNotification,
     removeNotification,
     markAsRead,
+    markAllAsRead,
     clearAllNotifications,
     getUnreadCount,
     fetchNotifications,

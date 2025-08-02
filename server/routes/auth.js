@@ -12,6 +12,9 @@ const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
+  console.log('Auth middleware - Header:', authHeader ? 'Present' : 'Missing');
+  console.log('Auth middleware - Token:', token ? 'Present' : 'Missing');
+
   if (!token) {
     return res.status(401).json({ error: 'Access token required' });
   }
@@ -20,6 +23,13 @@ const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.userId).select('-password');
     
+    console.log('Auth middleware - Decoded:', decoded);
+    console.log('Auth middleware - User found:', user ? {
+      id: user._id,
+      email: user.email,
+      role: user.role
+    } : 'No user found');
+    
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -27,6 +37,7 @@ const authenticateToken = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    console.error('Auth verification error:', error);
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
 };

@@ -101,6 +101,43 @@ router.get('/user/:userId/unread-count', async (req, res) => {
   }
 });
 
+// Mark all notifications as read for current user
+router.put('/read-all', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    const result = await Notification.updateMany(
+      { userId: userId, isRead: false },
+      { isRead: true }
+    );
+    
+    res.json({ 
+      message: 'All notifications marked as read',
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Mark all notifications read error:', error);
+    res.status(500).json({ error: 'Failed to mark all notifications as read' });
+  }
+});
+
+// Delete all notifications for current user
+router.delete('/clear-all', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    const result = await Notification.deleteMany({ userId: userId });
+    
+    res.json({ 
+      message: 'All notifications cleared successfully',
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Clear all notifications error:', error);
+    res.status(500).json({ error: 'Failed to clear all notifications' });
+  }
+});
+
 // Delete a notification
 router.delete('/:notificationId', async (req, res) => {
   try {
