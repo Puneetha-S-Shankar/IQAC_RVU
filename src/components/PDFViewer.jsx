@@ -1,98 +1,116 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+import React, { useState, useEffect } from 'react';
 import './PDFViewer.css';
 
-// Set worker source for pdfjs-dist - using CDN for compatibility
-GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@5.3.93/build/pdf.worker.min.js';
-
-const PDFViewer = ({ fileUrl, showControls = true, initialScale = 1.5, fitParentWidth = false }) => {
-  const canvasRef = useRef(null);
-  const [pdfRef, setPdfRef] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [numPages, setNumPages] = useState(0);
-  const [scale, setScale] = useState(initialScale);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+const PDFViewer = ({ 
+  fileUrl, 
+  showControls = true, 
+  fitParentWidth = false,
+  height = '600px' 
+}) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [pdfExists, setPdfExists] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
+    // Check if PDF exists
+    const checkPdfExists = async () => {
+      try {
+        setIsLoading(true);
+        setHasError(false);
+        
+        const response = await fetch(fileUrl, { method: 'HEAD' });
+        if (response.ok) {
+          setPdfExists(true);
+        } else {
+          setPdfExists(false);
+          setHasError(true);
+        }
+      } catch (error) {
+        console.error('PDF check error:', error);
+        setPdfExists(false);
+        setHasError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    const loadingTask = pdfjs.getDocument(fileUrl);
-    loadingTask.promise
-      .then(loadedPdf => {
-        setPdfRef(loadedPdf);
-        setNumPages(loadedPdf.numPages);
-        setLoading(false);
-      })
-      .catch(err => {
-        setError('Failed to load PDF file. It might be corrupted or in an unsupported format.');
-        setLoading(false);
-        console.error('PDF loading error:', err);
-      });
+    if (fileUrl) {
+      checkPdfExists();
+    }
   }, [fileUrl]);
 
-  useEffect(() => {
-    if (pdfRef && canvasRef.current) {
-      pdfRef.getPage(currentPage).then(page => {
-        let scaleToRender = scale;
-        if (fitParentWidth && canvasRef.current.parentElement) {
-          const parentWidth = canvasRef.current.parentElement.clientWidth;
-          scaleToRender = parentWidth / page.getViewport({ scale: 1.0 }).width;
-        }
-        const viewport = page.getViewport({ scale: scaleToRender });
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = fileUrl.split('/').pop();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
+  const openInNewTab = () => {
+    window.open(fileUrl, '_blank', 'noopener,noreferrer');
+  };
 
-        const renderContext = {
-          canvasContext: context,
-          viewport: viewport,
-        };
-        page.render(renderContext);
-      });
-    }
-  }, [pdfRef, currentPage, scale]);
+  if (isLoading) {
+    return (
+      <div className="pdf-viewer-container">
+        <div className="pdf-viewer-message">Loading PDF...</div>
+      </div>
+    );
+  }
 
-  const goToPrevPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
-  const goToNextPage = () => setCurrentPage(prev => Math.min(numPages, prev + 1));
-  const zoomIn = () => setScale(prev => prev + 0.2);
-  const zoomOut = () => setScale(prev => Math.max(0.5, prev - 0.2));
+  if (hasError || !pdfExists) {
+    return (
+      <div className="pdf-viewer-container">
+        <div className="pdf-viewer-message" style={{ color: '#ff6b6b' }}>
+          PDF not found or failed to load
+        </div>
+        {showControls && (
+          <div className="pdf-controls">
+            <button onClick={() => window.location.reload()}>
+              Retry
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const containerStyle = {
+    width: fitParentWidth ? '100%' : 'auto',
+    height: height
+  };
 
   return (
-    <div className="pdf-viewer-container">
-      {loading && <div className="pdf-viewer-message">Loading PDF...</div>}
-      {error && <div className="pdf-viewer-message" style={{ color: '#ff4a4a' }}>{error}</div>}
-      
-      {!loading && !error && (
-        <>
-          {showControls && (
-            <div className="pdf-controls">
-              <button onClick={goToPrevPage} disabled={currentPage <= 1}>
-                Prev
-              </button>
-              <span className="page-info">
-                Page {currentPage} of {numPages}
-              </span>
-              <button onClick={goToNextPage} disabled={currentPage >= numPages}>
-                Next
-              </button>
-              <button onClick={zoomOut} disabled={scale <= 0.5}>Zoom Out</button>
-              <button onClick={zoomIn}>Zoom In</button>
-              <a href={fileUrl} download target="_blank" rel="noopener noreferrer">
-                Download
-              </a>
-            </div>
-          )}
-          <div className="pdf-canvas-wrapper">
-            <canvas ref={canvasRef} className="pdf-canvas" />
-          </div>
-        </>
+    <div className="pdf-viewer-container" style={containerStyle}>
+      {showControls && (
+        <div className="pdf-controls">
+          <button onClick={handleDownload}>
+            📥 Download
+          </button>
+          <button onClick={openInNewTab}>
+            🔗 Open in New Tab
+          </button>
+        </div>
       )}
+      
+      <div className="pdf-iframe-wrapper" style={{ height: showControls ? 'calc(100% - 60px)' : '100%' }}>
+        <iframe
+          src={fileUrl}
+          title="PDF Viewer"
+          width="100%"
+          height="100%"
+          style={{
+            border: 'none',
+            borderRadius: '4px'
+          }}
+          onLoad={() => setIsLoading(false)}
+          onError={() => setHasError(true)}
+        />
+      </div>
     </div>
   );
 };
 
-export default PDFViewer; 
+export default PDFViewer;

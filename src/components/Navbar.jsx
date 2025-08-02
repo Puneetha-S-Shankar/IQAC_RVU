@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/rvu-logo.png";
 import { AuthContext } from "../context/AuthContext";
@@ -9,11 +9,47 @@ import {
   FaInfoCircle,
   FaSignInAlt,
   FaSignOutAlt,
+  FaUsersCog,
 } from "react-icons/fa";
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext) || {};
   const navigate = useNavigate();
+  const [userRole, setUserRole] = useState('viewer');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Get user role from AuthContext or localStorage
+  useEffect(() => {
+    let currentUser = null;
+    let token = null;
+    
+    // First check AuthContext
+    if (user) {
+      currentUser = user;
+      token = 'logged-in';
+    } else {
+      // Fallback to localStorage
+      try {
+        currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+        token = localStorage.getItem('token');
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+    
+    if (currentUser && currentUser._id && token) {
+      setUserRole(currentUser.role || 'viewer');
+      setIsAuthenticated(true);
+    } else {
+      setUserRole('viewer');
+      setIsAuthenticated(false);
+    }
+  }, [user]);
+
+  // Function to check if user can access restricted content
+  const canAccessRestrictedContent = () => {
+    return isAuthenticated && userRole !== 'viewer';
+  };
 
   const linkStyle = {
     color: "#FFD700",
@@ -83,9 +119,19 @@ const Navbar = () => {
           <FaFileAlt /> Policy
         </Link>
 
-        <Link to="/template" style={linkStyle} className="nav-hover">
-          <FaRegFileCode /> Template
-        </Link>
+        {/* Templates - Only show if user has access */}
+        {canAccessRestrictedContent() && (
+          <Link to="/template" style={linkStyle} className="nav-hover">
+            <FaRegFileCode /> Template
+          </Link>
+        )}
+
+        {/* Roles - Only show for admin users */}
+        {userRole === 'admin' && (
+          <Link to="/roles" style={linkStyle} className="nav-hover">
+            <FaUsersCog /> Roles
+          </Link>
+        )}
 
         <Link to="/about" style={linkStyle} className="nav-hover">
           <FaInfoCircle /> About Us

@@ -12,6 +12,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.7.2",
     "mongoose": "^8.16.0",
+    "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.3.93",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

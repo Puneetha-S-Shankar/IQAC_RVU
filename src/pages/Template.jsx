@@ -1,5 +1,7 @@
 // Template.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 // Static categories and templates
 const categories = [
@@ -11,6 +13,56 @@ const categories = [
 
 const Template = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const { user: contextUser } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [userRole, setUserRole] = useState('viewer');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Check authentication and role
+  useEffect(() => {
+    let user = null;
+    let token = null;
+    
+    // First check AuthContext
+    if (contextUser) {
+      user = contextUser;
+      token = 'logged-in';
+    } else {
+      // Fallback to localStorage
+      try {
+        user = JSON.parse(localStorage.getItem('user') || 'null');
+        token = localStorage.getItem('token');
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+    
+    if (user && user._id && token) {
+      setUserRole(user.role || 'viewer');
+      setIsAuthenticated(true);
+    } else {
+      setUserRole('viewer');
+      setIsAuthenticated(false);
+    }
+  }, [contextUser]);
+
+  // No access restriction - allow all authenticated users
+  // If not authorized, show loading message
+  if (!isAuthenticated) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: '#182E37',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#D5AB5D',
+        fontSize: '1.5rem'
+      }}>
+        Redirecting...
+      </div>
+    );
+  }
 
   // Styles
   const containerStyle = {

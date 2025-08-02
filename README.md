@@ -95,3 +95,70 @@ You will need to run the frontend and backend servers in separate terminals.
     ```
 
 Once both servers are running, you can access the application by navigating to `http://localhost:5173` in your web browser.
+
+---
+
+## Recent Changes
+
+### Major Workflow Enhancement - January 2025
+**Updated by: IamSamk**
+
+#### 🚀 Complete Assignment Workflow System
+Implemented a comprehensive document management workflow with the following key features:
+
+**1. Assignment Creation & Management**
+- Admin users can create assignments with designated initiators and reviewers
+- Course-specific document assignments with customizable deadlines
+- Assignment editing capabilities in the Admin Roles → Records section
+- Validation to prevent same person from being both initiator and reviewer
+
+**2. Document Upload & Review Process**
+- **Initiator Workflow**: Upload course documents with file validation
+- **Review Workflow**: Professional comment modals (replaced browser prompts)
+- **Document Preview**: Full-screen document viewing with download options
+- **Approval Chain**: Reviewer approval → Admin final approval → Publication
+
+**3. Enhanced Notification System**
+- Real-time notifications for all workflow stages
+- Clickable notifications that navigate directly to assignments
+- Comprehensive notification types:
+  - File submission alerts for reviewers
+  - Approval/rejection notifications for initiators
+  - Admin notifications for final approval requests
+  - Assignment change notifications
+
+**4. Security & Authentication Improvements**
+- Implemented bcrypt password encryption across all users
+- Fixed login issues for test accounts (test3@iqac.com resolved)
+- Role-based access control with proper validation
+- Secure file serving through GridFS
+
+**5. User Interface Enhancements**
+- Professional modal interfaces for comments and document preview
+- Responsive design improvements
+- Status badges with color coding for assignment progress
+- Clean notification center with read/unread states
+- Course-specific document visibility
+
+**6. Data Management & Cleanup**
+- Removed duplicate assignments where same user was initiator and reviewer
+- Database optimization and proper indexing
+- Temporary file cleanup and project organization
+- Enhanced error handling and validation
+
+#### 🔧 Technical Improvements
+- **Frontend**: React context management, modal systems, notification handling
+- **Backend**: RESTful API endpoints, GridFS file management, MongoDB aggregation
+- **Database**: Enhanced schemas with proper enums and validation
+- **File System**: GridFS integration for scalable document storage
+
+#### 📋 Workflow Summary
+1. **Admin creates assignment** → Users receive notifications
+2. **Initiator uploads document** → Reviewer gets notification
+3. **Reviewer approves/rejects** → Initiator and Admin notified
+4. **Admin final approval** → Document published and accessible
+5. **All notifications clickable** → Direct navigation to assignments
+
+The system now provides a complete, production-ready document workflow management solution for IQAC operations.
+
+---

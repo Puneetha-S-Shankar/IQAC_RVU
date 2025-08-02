@@ -9,6 +9,7 @@
   border: 1px solid #d5ab5d;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  min-height: 200px;
 }
 
 .pdf-controls {
@@ -51,26 +52,13 @@
   transform: none;
 }
 
-.page-info {
-  color: #fff;
-  font-weight: bold;
-  font-size: 1rem;
-  margin: 0 0.5rem;
-}
-
-.pdf-canvas-wrapper {
-  overflow: auto;
+.pdf-iframe-wrapper {
   width: 100%;
   max-width: 100%;
-  max-height: 70vh; /* Limit height to 70% of the viewport height */
   border: 1px solid #182e37;
   border-radius: 4px;
   background: #fff; /* White background for the PDF itself */
-}
-
-.pdf-canvas {
-  display: block;
-  margin: 0 auto;
+  overflow: hidden;
 }
 
 .pdf-viewer-message {
@@ -78,4 +66,11 @@
   font-size: 1.2rem;
   font-weight: 500;
   padding: 2rem;
-} 
+  text-align: center;
+}
+
+/* Remove old canvas-related styles */
+.pdf-canvas-wrapper,
+.pdf-canvas {
+  display: none;
+}

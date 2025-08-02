@@ -1,0 +1,248 @@
+.roles-container {
+  min-height: 100vh;
+  background: #182E37;
+  padding: 2rem;
+  color: #fff;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.roles-heading {
+  color: #D5AB5D;
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-weight: bold;
+}
+
+.roles-tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.roles-tab {
+  background: #223b47;
+  border: 2px solid #D5AB5D;
+  color: #D5AB5D;
+  padding: 0.8rem 2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.roles-tab:hover {
+  background: #D5AB5D;
+  color: #182E37;
+}
+
+.roles-tab.active {
+  background: #D5AB5D;
+  color: #182E37;
+}
+
+.roles-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #223b47;
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(213, 171, 93, 0.3);
+}
+
+.roles-content h2 {
+  color: #D5AB5D;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+}
+
+.roles-message {
+  background: #223b47;
+  border-left: 4px solid #D5AB5D;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 4px;
+}
+
+.roles-message.success {
+  border-left-color: #28a745;
+  color: #28a745;
+}
+
+.roles-message.error {
+  border-left-color: #dc3545;
+  color: #dc3545;
+}
+
+.assignment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  color: #D5AB5D;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  background: #182E37;
+  border: 2px solid rgba(213, 171, 93, 0.3);
+  color: #fff;
+  padding: 0.8rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #D5AB5D;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.submit-btn {
+  background: #D5AB5D;
+  color: #182E37;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  align-self: flex-start;
+}
+
+.submit-btn:hover {
+  background: #c5995d;
+  transform: translateY(-2px);
+}
+
+.submit-btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.records-table-container,
+.users-table-container {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid rgba(213, 171, 93, 0.3);
+}
+
+.records-table,
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #182E37;
+}
+
+.records-table th,
+.records-table td,
+.users-table th,
+.users-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(213, 171, 93, 0.2);
+}
+
+.records-table th,
+.users-table th {
+  background: #D5AB5D;
+  color: #182E37;
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+}
+
+.records-table td,
+.users-table td {
+  color: #fff;
+}
+
+.records-table tr:hover,
+.users-table tr:hover {
+  background: rgba(213, 171, 93, 0.1);
+}
+
+.status-badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-align: center;
+  display: inline-block;
+  min-width: 100px;
+}
+
+.users-table select {
+  background: #223b47;
+  border: 1px solid rgba(213, 171, 93, 0.3);
+  color: #fff;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.users-table select:focus {
+  outline: none;
+  border-color: #D5AB5D;
+}
+
+.user-details {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(213, 171, 93, 0.1);
+  border-radius: 4px;
+  border-left: 3px solid #D5AB5D;
+}
+
+.user-details small {
+  color: #D5AB5D;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .roles-container {
+    padding: 1rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .roles-tabs {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .records-table-container,
+  .users-table-container {
+    font-size: 0.9rem;
+  }
+}
