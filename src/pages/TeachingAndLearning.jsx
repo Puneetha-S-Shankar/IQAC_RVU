@@ -42,11 +42,11 @@ const TeachingAndLearning = () => {
       
       if (contextUser) {
         user = contextUser;
-        token = getAuthToken();
+        token = getToken();
       } else {
         try {
           user = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || 'null');
-          token = getAuthToken();
+          token = getToken();
         } catch (error) {
           console.error('Error parsing user data:', error);
         }
