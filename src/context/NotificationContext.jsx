@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 
 const NotificationContext = createContext();
 
@@ -14,6 +15,7 @@ export const useNotifications = () => {
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const navigate = useNavigate();
+  const { user } = useAuth(); // Get user from auth context
 
   const handleNotificationClick = (notification) => {
     // Mark as read
@@ -36,10 +38,20 @@ export const NotificationProvider = ({ children }) => {
       id,
       ...notification,
       timestamp: new Date(),
+      createdAt: new Date(), // Add createdAt for consistency
       read: false
     };
     
-    setNotifications(prev => [newNotification, ...prev]);
+    // Add to the beginning of the array (most recent first)
+    setNotifications(prev => {
+      const updatedNotifications = [newNotification, ...prev];
+      // Sort to ensure proper order (most recent first)
+      return updatedNotifications.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.timestamp);
+        const dateB = new Date(b.createdAt || b.timestamp);
+        return dateB - dateA;
+      });
+    });
     
     // Auto-remove notification after 5 seconds if it's not persistent
     if (!notification.persistent) {
@@ -160,9 +172,15 @@ export const NotificationProvider = ({ children }) => {
     return notifications.filter(notif => !(notif.read || notif.isRead)).length;
   };
 
-  // Fetch notifications from server on mount
+  // Fetch notifications from server on mount and when user changes
   useEffect(() => {
-    fetchNotifications();
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+    if (token) {
+      fetchNotifications();
+    } else {
+      // Clear notifications when no token (user logged out)
+      setNotifications([]);
+    }
     
     // Set up global function for welcome notification
     window.addWelcomeNotification = () => {
@@ -187,13 +205,27 @@ export const NotificationProvider = ({ children }) => {
     return () => {
       delete window.addWelcomeNotification;
     };
-  }, []);
+  }, []); // Keep empty dependency array since we check token inside
+
+  // Watch for user authentication changes
+  useEffect(() => {
+    if (user) {
+      // User logged in, fetch notifications
+      fetchNotifications();
+    } else {
+      // User logged out, clear notifications
+      setNotifications([]);
+    }
+  }, [user]);
 
   const fetchNotifications = async () => {
     try {
       // Get token from sessionStorage first, then localStorage
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        setNotifications([]);
+        return;
+      }
 
       const response = await fetch('http://localhost:5000/api/notifications', {
         headers: {
@@ -203,7 +235,16 @@ export const NotificationProvider = ({ children }) => {
       
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data);
+        // Ensure notifications are sorted by most recent first (server should do this, but double-check)
+        const sortedNotifications = data.sort((a, b) => {
+          const dateA = new Date(a.createdAt || a.timestamp);
+          const dateB = new Date(b.createdAt || b.timestamp);
+          return dateB - dateA; // Most recent first
+        });
+        setNotifications(sortedNotifications);
+      } else if (response.status === 401) {
+        // Token is invalid, clear notifications
+        setNotifications([]);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
