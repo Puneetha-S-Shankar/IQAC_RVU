@@ -35,12 +35,14 @@ app.get('/', (req, res) => {
 // Routes
 const authRoutes = require('./routes/auth');
 const fileRoutes = require('./routes/files');
+const unifiedFileRoutes = require('./routes/unifiedFiles');
 const taskRoutes = require('./routes/tasks');
 const notificationRoutes = require('./routes/notifications');
 const assignmentRoutes = require('./routes/assignments');
 
 app.use('/api/auth', authRoutes);
-app.use('/api/files', fileRoutes);
+app.use('/api/files', fileRoutes); // Keep old routes for backward compatibility
+app.use('/api/unified-files', unifiedFileRoutes); // New unified file system
 app.use('/api/tasks', taskRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/assignments', assignmentRoutes);
