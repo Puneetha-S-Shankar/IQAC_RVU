@@ -101,9 +101,6 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.removeItem('token');
     
     console.log('Logout successful for tab:', tabId);
-    
-    // Trigger a custom event to notify other components about logout
-    window.dispatchEvent(new CustomEvent('userLogout'));
   };
 
   const getToken = () => {

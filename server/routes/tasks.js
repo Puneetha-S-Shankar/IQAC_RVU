@@ -43,13 +43,19 @@ router.post('/create', async (req, res) => {
   }
 });
 
-// Get tasks for a specific user
+// Get tasks for a specific user (SIMPLIFIED!)
 router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const tasks = await Task.find({ assignedTo: userId })
-      .populate('assignedBy', 'firstName lastName email')
-      .sort({ createdAt: -1 });
+    const requestingUser = req.user;
+    
+    // Users can only see their own tasks (unless admin)
+    if (requestingUser.role !== 'admin' && requestingUser._id.toString() !== userId) {
+      return res.status(403).json({ error: 'You can only view your own tasks' });
+    }
+    
+    // Use the simple findForUser method
+    const tasks = await Task.findForUser(userId, requestingUser.role);
     
     res.json(tasks);
   } catch (error) {
@@ -58,19 +64,76 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
-// Get all tasks (Admin only)
-router.get('/all', async (req, res) => {
+// Get current user's tasks (SUPER SIMPLE!)
+router.get('/my-tasks', async (req, res) => {
   try {
-    const tasks = await Task.find()
-      .populate('assignedTo', 'firstName lastName email')
-      .populate('assignedBy', 'firstName lastName email')
-      .populate('reviewedBy', 'firstName lastName email')
-      .sort({ createdAt: -1 });
+    const userId = req.user._id;
+    const userRole = req.user.role;
+    
+    // ONE LINE - Get tasks directly assigned to user
+    const tasks = await Task.findForUser(userId, userRole);
     
     res.json(tasks);
   } catch (error) {
-    console.error('Get all tasks error:', error);
-    res.status(500).json({ error: 'Failed to fetch tasks' });
+    console.error('Get my tasks error:', error);
+    res.status(500).json({ error: 'Failed to fetch my tasks' });
+  }
+});
+
+// Get specific task with access control (SIMPLIFIED!)
+router.get('/:taskId', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const userId = req.user._id;
+    const userRole = req.user.role;
+    
+    const task = await Task.findById(taskId)
+      .populate('assignedToInitiator assignedToReviewer assignedBy', 'firstName lastName email');
+    
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    // SIMPLE ACCESS CHECK - One line!
+    if (!task.canUserAccess(userId, userRole)) {
+      return res.status(403).json({ error: 'You do not have access to this task' });
+    }
+    
+    res.json(task);
+  } catch (error) {
+    console.error('Get task error:', error);
+    res.status(500).json({ error: 'Failed to fetch task' });
+  }
+});
+
+// Upload file for task (SIMPLE PERMISSION CHECK)
+router.post('/:taskId/upload', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { fileId } = req.body;
+    const userId = req.user._id;
+    const userRole = req.user.role;
+    
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    // Check if user can upload (only initiator or admin)
+    if (!task.canUserPerformAction(userId, 'upload', userRole)) {
+      return res.status(403).json({ error: 'Only the assigned initiator can upload files' });
+    }
+    
+    // Update task
+    task.fileId = fileId;
+    task.status = 'file-uploaded';
+    task.submittedAt = new Date();
+    await task.save();
+    
+    res.json({ message: 'File uploaded successfully', task });
+  } catch (error) {
+    console.error('Upload file error:', error);
+    res.status(500).json({ error: 'Failed to upload file' });
   }
 });
 
