@@ -2,33 +2,55 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const mongoose = require('mongoose');
-require('dotenv').config();
+
+// Import configurations
+const environment = require('./config/environment');
+const databaseConfig = require('./config/database');
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: environment.CORS_ORIGIN,
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Mongoose connection
-mongoose.connect(process.env.MONGODB_URI);
-mongoose.connection.on('connected', () => {
-  console.log('✅ Mongoose connected');
-});
-mongoose.connection.on('error', (err) => {
-  console.error('❌ Mongoose connection error:', err);
-});
+// Database connection
+async function connectDatabase() {
+  try {
+    await databaseConfig.connect();
+  } catch (error) {
+    console.error('❌ Failed to connect to database:', error.message);
+    process.exit(1);
+  }
+}
+
+// Connect to database before starting server
+connectDatabase();
 
 // Basic route
 app.get('/', (req, res) => {
   res.json({ 
     message: 'IQAC API is running',
-    version: '1.0.0',
-    database: 'MongoDB Atlas'
+    version: '2.0.0',
+    system: 'Unified File System',
+    database: 'MongoDB Atlas',
+    namingConvention: environment.FILE_NAMING_FORMAT,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    database: databaseConfig.isConnected ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -49,18 +71,50 @@ app.use('/api/assignments', assignmentRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  console.error('❌ Error:', err.stack);
+  res.status(500).json({ 
+    error: 'Something went wrong!',
+    message: environment.NODE_ENV === 'development' ? err.message : 'Internal server error',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ 
+    error: 'Route not found',
+    availableRoutes: [
+      '/api/auth',
+      '/api/files',
+      '/api/unified-files',
+      '/api/tasks',
+      '/api/notifications',
+      '/api/assignments'
+    ],
+    timestamp: new Date().toISOString()
+  });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Database: MongoDB Atlas`);
-  console.log(`Upload directory: ${path.join(__dirname, 'uploads')}`);
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\n🔄 Shutting down gracefully...');
+  await databaseConfig.disconnect();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🔄 Shutting down gracefully...');
+  await databaseConfig.disconnect();
+  process.exit(0);
+});
+
+// Start server
+app.listen(environment.PORT, () => {
+  console.log(`🚀 Server running on port ${environment.PORT}`);
+  console.log(`🌍 Environment: ${environment.NODE_ENV}`);
+  console.log(`📊 Database: MongoDB Atlas`);
+  console.log(`📦 Master GridFS bucket: ${environment.MASTER_BUCKET_NAME}`);
+  console.log(`📁 File naming: ${environment.FILE_NAMING_FORMAT}`);
+  console.log(`🔗 Frontend: ${environment.CORS_ORIGIN}`);
+  console.log(`📅 Started: ${new Date().toISOString()}`);
 }); 

@@ -143,6 +143,31 @@ router.get('/search', async (req, res) => {
   }
 });
 
+// GET /api/unified-files/search-by-filename - Search files by new naming convention
+router.get('/search-by-filename', async (req, res) => {
+  try {
+    const searchPattern = req.query.pattern || '';
+    
+    if (!searchPattern) {
+      return res.status(400).json({ error: 'Search pattern is required' });
+    }
+
+    const files = await unifiedFileService.searchByFormattedFilename(searchPattern);
+    res.json({ 
+      files, 
+      searchPattern,
+      message: `Found ${files.length} files matching pattern: ${searchPattern}`
+    });
+
+  } catch (error) {
+    console.error('Filename search error:', error);
+    res.status(500).json({ 
+      error: 'Filename search failed', 
+      details: error.message 
+    });
+  }
+});
+
 // GET /api/unified-files/academic - Get files by academic criteria
 router.get('/academic', async (req, res) => {
   try {
@@ -248,9 +273,9 @@ router.get('/:id/download', async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    // Set response headers
+    // Set response headers - use formatted filename for display
     res.set('Content-Type', file.contentType);
-    res.set('Content-Disposition', `inline; filename="${file.originalName}"`);
+    res.set('Content-Disposition', `inline; filename="${file.filename}"`);
     res.set('Content-Length', file.size);
 
     // Stream the file

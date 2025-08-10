@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
-const { ObjectId } = require('mongodb');
+const { GridFSBucket } = require('mongodb');
 const File = require('../models/File');
-const Task = require('../models/Task');
+const environment = require('../config/environment');
 
 class UnifiedFileService {
   constructor() {
@@ -10,13 +10,50 @@ class UnifiedFileService {
   }
 
   async initialize() {
-    if (!mongoose.connection.readyState) {
-      throw new Error('Database not connected');
+    try {
+      // Get database connection from config
+      const databaseConfig = require('../config/database');
+      if (!databaseConfig.isConnected) {
+        await databaseConfig.connect();
+      }
+      
+      this.db = databaseConfig.getDatabase();
+      this.masterBucket = databaseConfig.getMasterBucket();
+      
+      console.log('✅ Unified file service initialized');
+      console.log(`📦 Using bucket: ${environment.MASTER_BUCKET_NAME}`);
+      console.log(`📁 Collection: ${environment.MASTER_COLLECTION_NAME}`);
+    } catch (error) {
+      throw new Error(`Failed to initialize unified file service: ${error.message}`);
     }
-    this.db = mongoose.connection.db;
-    this.masterBucket = new mongoose.mongo.GridFSBucket(this.db, {
-      bucketName: 'master-files'
-    });
+  }
+
+  // Generate filename in format: year_course.code_file.name
+  generateFormattedFilename(metadata, originalName) {
+    const parts = [];
+    
+    if (metadata.year) {
+      parts.push(metadata.year);
+    }
+    
+    if (metadata.courseCode) {
+      parts.push(metadata.courseCode);
+    }
+    
+    if (parts.length > 0) {
+      parts.push('_');
+    }
+    
+    const nameWithoutExt = originalName.replace(/\.[^/.]+$/, '');
+    parts.push(nameWithoutExt);
+    
+    const extension = originalName.split('.').pop();
+    if (extension && extension !== originalName) {
+      parts.push('.');
+      parts.push(extension);
+    }
+    
+    return parts.join('');
   }
 
   // Upload file to unified system
@@ -32,12 +69,16 @@ class UnifiedFileService {
         await this.archiveFile(existingFile._id);
       }
 
-      // Upload to GridFS master bucket
-      const uploadStream = this.masterBucket.openUploadStream(fileData.originalName, {
+      // Generate new filename format
+      const formattedFilename = this.generateFormattedFilename(metadata, fileData.originalName);
+
+      // Upload to GridFS master bucket with new filename
+      const uploadStream = this.masterBucket.openUploadStream(formattedFilename, {
         contentType: fileData.mimetype,
         metadata: {
           // Store minimal metadata in GridFS, full metadata in our model
           originalName: fileData.originalName,
+          formattedFilename: formattedFilename,
           uploadedBy: metadata.uploadedBy,
           category: metadata.category
         }
@@ -49,9 +90,9 @@ class UnifiedFileService {
 
         uploadStream.on('finish', async (file) => {
           try {
-            // Create unified file record
+            // Create unified file record with new filename
             const unifiedFile = new File({
-              filename: file.filename,
+              filename: formattedFilename, // Use the new formatted filename
               originalName: fileData.originalName,
               contentType: fileData.mimetype,
               size: fileData.size,
@@ -261,6 +302,56 @@ class UnifiedFileService {
     return await File.find(query)
       .sort({ 'metadata.uploadedAt': -1 })
       .populate('metadata.uploadedBy', 'firstName lastName email');
+  }
+
+  // Search files by new naming convention format
+  async searchByFormattedFilename(searchPattern) {
+    try {
+      // Parse the search pattern (e.g., "2023_CS101" or "CS101_Course")
+      const parts = searchPattern.split('_');
+      const query = {};
+      
+      if (parts.length >= 2) {
+        // First part could be year or course code
+        const firstPart = parts[0];
+        const secondPart = parts[1];
+        
+        // Check if first part is a year (4 digits)
+        if (/^\d{4}$/.test(firstPart)) {
+          query['metadata.year'] = firstPart;
+          if (secondPart) {
+            query['metadata.courseCode'] = secondPart;
+          }
+        } else {
+          // First part is course code
+          query['metadata.courseCode'] = firstPart;
+          if (secondPart) {
+            // Second part could be year or part of filename
+            if (/^\d{4}$/.test(secondPart)) {
+              query['metadata.year'] = secondPart;
+            }
+          }
+        }
+      } else if (parts.length === 1) {
+        // Single part search - could be year, course code, or filename
+        const part = parts[0];
+        if (/^\d{4}$/.test(part)) {
+          query['metadata.year'] = part;
+        } else {
+          // Search in course code or filename
+          query['$or'] = [
+            { 'metadata.courseCode': { $regex: part, $options: 'i' } },
+            { filename: { $regex: part, $options: 'i' } }
+          ];
+        }
+      }
+      
+      return await File.find(query)
+        .sort({ 'metadata.uploadedAt': -1 })
+        .populate('metadata.uploadedBy', 'firstName lastName email');
+    } catch (error) {
+      throw new Error(`Search by formatted filename failed: ${error.message}`);
+    }
   }
 
   // Get file statistics

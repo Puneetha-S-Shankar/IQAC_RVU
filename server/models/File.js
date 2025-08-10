@@ -76,6 +76,7 @@ fileSchema.index({ 'metadata.assignmentId': 1 });
 fileSchema.index({ 'metadata.uploadedBy': 1 });
 fileSchema.index({ 'metadata.status': 1 });
 fileSchema.index({ 'metadata.uploadedAt': -1 });
+fileSchema.index({ filename: 1 }); // Index for filename searches
 
 // Virtual for full academic path
 fileSchema.virtual('academicPath').get(function() {
@@ -137,6 +138,49 @@ fileSchema.statics.findCurriculumFiles = function(programme, year, courseCode) {
   if (programme) query['metadata.programme'] = programme;
   if (year) query['metadata.year'] = year;
   if (courseCode) query['metadata.courseCode'] = courseCode;
+  
+  return this.find(query).sort({ 'metadata.uploadedAt': -1 });
+};
+
+// Static method to find files by new naming convention
+fileSchema.statics.findByFormattedFilename = function(searchPattern) {
+  const parts = searchPattern.split('_');
+  const query = {};
+  
+  if (parts.length >= 2) {
+    // First part could be year or course code
+    const firstPart = parts[0];
+    const secondPart = parts[1];
+    
+    // Check if first part is a year (4 digits)
+    if (/^\d{4}$/.test(firstPart)) {
+      query['metadata.year'] = firstPart;
+      if (secondPart) {
+        query['metadata.courseCode'] = secondPart;
+      }
+    } else {
+      // First part is course code
+      query['metadata.courseCode'] = firstPart;
+      if (secondPart) {
+        // Second part could be year or part of filename
+        if (/^\d{4}$/.test(secondPart)) {
+          query['metadata.year'] = secondPart;
+        }
+      }
+    }
+  } else if (parts.length === 1) {
+    // Single part search - could be year, course code, or filename
+    const part = parts[0];
+    if (/^\d{4}$/.test(part)) {
+      query['metadata.year'] = part;
+    } else {
+      // Search in course code or filename
+      query['$or'] = [
+        { 'metadata.courseCode': { $regex: part, $options: 'i' } },
+        { filename: { $regex: part, $options: 'i' } }
+      ];
+    }
+  }
   
   return this.find(query).sort({ 'metadata.uploadedAt': -1 });
 };
