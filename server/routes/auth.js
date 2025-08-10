@@ -1,27 +1,85 @@
 const express = require('express');
-const database = require('../utils/database');
+const User = require('../models/User');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
+
+// JWT Secret (in production, use environment variable)
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// JWT middleware for protected routes
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  console.log('Auth middleware - Header:', authHeader ? 'Present' : 'Missing');
+  console.log('Auth middleware - Token:', token ? 'Present' : 'Missing');
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-password');
+    
+    console.log('Auth middleware - Decoded:', decoded);
+    console.log('Auth middleware - User found:', user ? {
+      id: user._id,
+      email: user.email,
+      role: user.role
+    } : 'No user found');
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Auth verification error:', error);
+    return res.status(403).json({ error: 'Invalid or expired token' });
+  }
+};
+
+// Generate JWT token
+const generateToken = (userId) => {
+  return jwt.sign(
+    { userId },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+};
 
 // Register route
 router.post('/register', async (req, res) => {
-  const { username, email, password, firstName, lastName } = req.body;
+  const { username, email, password, firstName, lastName, role, courseCode, courseName } = req.body;
   try {
     // Check if user already exists
-    const existingUser = await database.findUser({ email });
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
+    // Hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
     const userData = {
       username,
       email,
-      password, // In production, this should be hashed
+      password: hashedPassword, // Store hashed password
       firstName,
       lastName,
-      role: 'user' // Default role for new registrations
+      role: role || 'user', // Use provided role or default to 'user'
+      courseCode: courseCode || '',
+      courseName: courseName || '',
+      isActive: true,
+      createdAt: new Date(),
+      lastLogin: new Date()
     };
 
-    const user = await database.createUser(userData);
+    const user = await User.create(userData);
     res.status(201).json({ 
       message: 'User created successfully',
       user: {
@@ -30,7 +88,9 @@ router.post('/register', async (req, res) => {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role
+        role: user.role,
+        courseCode: user.courseCode,
+        courseName: user.courseName
       }
     });
   } catch (err) {
@@ -45,35 +105,44 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     
     // Find user by email
-    const user = await database.findUser({ email });
-    
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-
-    // Check password (in production, use proper password hashing)
-    if (user.password !== password) {
+    
+    // Check password using bcrypt
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-
+    
     // Check if user is active
-    if (!user.isActive) {
+    if (user.isActive === false) {
       return res.status(401).json({ message: 'Account is deactivated' });
     }
-
+    
     // Update last login
-    await database.updateUser(user._id, { lastLogin: new Date().toISOString() });
-
-    // Return user data (excluding password)
+    user.lastLogin = new Date();
+    await user.save();
+    
+    // Generate JWT token
+    const token = generateToken(user._id);
+    
+    // Return user data and token
     res.json({ 
       message: 'Login successful',
+      token,
       user: {
         _id: user._id,
         username: user.username,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        name: user.firstName + ' ' + user.lastName,
         role: user.role,
+        subrole: user.subrole,
+        courseCode: user.courseCode,
+        courseName: user.courseName,
         lastLogin: user.lastLogin
       }
     });
@@ -86,25 +155,11 @@ router.post('/login', async (req, res) => {
 // Get user profile
 router.get('/profile/:id', async (req, res) => {
   try {
-    const user = await database.findUserById(req.params.id);
+    const user = await User.findById(req.params.id).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    // Return user data (excluding password)
-    res.json({
-      user: {
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        createdAt: user.createdAt,
-        lastLogin: user.lastLogin,
-        isActive: user.isActive
-      }
-    });
+    res.json({ user });
   } catch (err) {
     console.error('Profile error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -116,22 +171,17 @@ router.put('/profile/:id', async (req, res) => {
   try {
     const { firstName, lastName, email } = req.body;
     const updateData = { firstName, lastName, email };
-    
-    const updatedUser = await database.updateUser(req.params.id, updateData);
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData },
+      { new: true, runValidators: true, context: 'query' }
+    ).select('-password');
     if (!updatedUser) {
       return res.status(404).json({ message: 'User not found' });
     }
-
     res.json({ 
       message: 'Profile updated successfully',
-      user: {
-        _id: updatedUser._id,
-        username: updatedUser.username,
-        email: updatedUser.email,
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName,
-        role: updatedUser.role
-      }
+      user: updatedUser
     });
   } catch (err) {
     console.error('Profile update error:', err);
@@ -142,19 +192,7 @@ router.put('/profile/:id', async (req, res) => {
 // Get all users (admin only)
 router.get('/users', async (req, res) => {
   try {
-    const db = await database.readDatabase();
-    const users = db.users.map(user => ({
-      _id: user._id,
-      username: user.username,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      createdAt: user.createdAt,
-      lastLogin: user.lastLogin,
-      isActive: user.isActive
-    }));
-    
+    const users = await User.find().select('-password');
     res.json({ users });
   } catch (err) {
     console.error('Get users error:', err);
@@ -162,4 +200,100 @@ router.get('/users', async (req, res) => {
   }
 });
 
+// Create admin user (development only)
+router.post('/create-admin', async (req, res) => {
+  try {
+    const { username, email, password, firstName, lastName } = req.body;
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const adminData = {
+      username,
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      role: 'admin',
+      isActive: true,
+      createdAt: new Date(),
+      lastLogin: new Date()
+    };
+
+    const admin = await User.create(adminData);
+    res.status(201).json({ 
+      message: 'Admin user created successfully',
+      user: {
+        _id: admin._id,
+        username: admin.username,
+        email: admin.email,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        role: admin.role
+      }
+    });
+  } catch (err) {
+    console.error('Create admin error:', err);
+    res.status(500).json({ error: 'Server error during admin creation' });
+  }
+});
+
+// Update user role (admin only)
+router.put('/users/:id/role', async (req, res) => {
+  try {
+    const { role } = req.body;
+    
+    if (!['admin', 'user', 'viewer'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { role },
+      { new: true }
+    ).select('-password');
+    
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ 
+      message: 'User role updated successfully',
+      user: updatedUser
+    });
+  } catch (err) {
+    console.error('Update role error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Protected route to verify token and get user data
+router.get('/verify', authenticateToken, async (req, res) => {
+  try {
+    res.json({
+      user: {
+        _id: req.user._id,
+        username: req.user.username,
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        name: req.user.firstName + ' ' + req.user.lastName,
+        role: req.user.role,
+        subrole: req.user.subrole,
+        courseCode: req.user.courseCode,
+        courseName: req.user.courseName,
+        lastLogin: req.user.lastLogin
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to verify token' });
+  }
+});
+
 module.exports = router;
+module.exports.authenticateToken = authenticateToken;

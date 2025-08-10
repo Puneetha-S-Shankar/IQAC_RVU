@@ -1,20 +1,41 @@
 {
-  "name": "iqac-server",
-  "version": "1.0.0",
+  "name": "iqac-rvu-server",
+  "version": "2.0.0",
+  "description": "IQAC RVU Unified File System Server",
   "main": "index.js",
-  "license": "MIT",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "test": "node test-new-naming-convention.js",
+    "migrate": "node migrate-with-new-naming.js",
+    "migrate:status": "node migrate-with-new-naming.js --status",
+    "example": "node example-new-naming-usage.js",
+    "health": "curl http://localhost:5000/health"
   },
+  "keywords": [
+    "iqac",
+    "rvu",
+    "unified-files",
+    "gridfs",
+    "mongodb"
+  ],
+  "author": "IQAC RVU Team",
+  "license": "MIT",
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^6.7.2",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.0",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "multer": "^1.4.5-lts.1"
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^5.7.0",
+    "mongoose": "^7.5.0",
+    "multer": "^1.4.5-lts.2"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }

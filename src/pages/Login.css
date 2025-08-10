@@ -8,7 +8,7 @@ body, html {
 .login-fullscreen {
   width: 100vw;
   height: 100vh;
-  background: #0a1931;
+  background: #0c232c;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -90,7 +90,11 @@ body, html {
   padding: 10px 12px;
   font-size: 1rem;
   margin-bottom: 2px;
+  width: 100%;
+  box-sizing: border-box;
+  height: 42px; /* Ensures same height for username & password */
 }
+
 
 .input-group input:focus {
   outline: 2px solid #ffe04a;
