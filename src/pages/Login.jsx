@@ -1,6 +1,7 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import "./Login.css";
 
 const Login = () => {
@@ -18,17 +19,13 @@ const Login = () => {
     e.preventDefault();
     await login(email, password);
   };
-<div className="login-fullscreen">
-  <div className="login-box">
-    {/* Your form elements here */}
-  </div>
-</div>
 
   return (
     <div className="login-fullscreen">
       <div className="login-form-wrapper">
         <form className="login-form styled-login-form" onSubmit={handleSubmit}>
           <h2 className="login-heading">Login</h2>
+
           <div className="input-group">
             <label htmlFor="email">Email ID</label>
             <input
@@ -40,9 +37,10 @@ const Login = () => {
               required
             />
           </div>
+
           <div className="input-group">
             <label htmlFor="password">Password</label>
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: "relative" }}>
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -57,26 +55,28 @@ const Login = () => {
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 onClick={() => setShowPassword((prev) => !prev)}
                 style={{
-                  position: 'absolute',
+                  position: "absolute",
                   right: 8,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
                   padding: 0,
-                  color: '#ffe04a',
-                  fontSize: 18
+                  color: "#ffe04a",
+                  fontSize: 18,
                 }}
                 tabIndex={-1}
               >
-                {showPassword ? '👁️' : '🙈'}
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
           </div>
+
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? "Logging in..." : "Log In"}
           </button>
+
           {error && <div className="login-error">{error}</div>}
         </form>
       </div>
