@@ -9,7 +9,7 @@
       "firstName": "Admin",
       "lastName": "User",
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "lastLogin": "2025-07-11T13:26:28.920Z",
+      "lastLogin": "2025-07-11T14:46:57.477Z",
       "isActive": true
     },
     {
@@ -97,7 +97,7 @@
     }
   ],
   "metadata": {
-    "lastUpdated": "2025-07-11T13:26:28.921Z",
+    "lastUpdated": "2025-07-11T14:46:57.478Z",
     "version": "1.0.0"
   }
 }

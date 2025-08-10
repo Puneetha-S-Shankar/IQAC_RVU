@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.7.2",
+    "framer-motion": "^12.23.6",
     "mongoose": "^8.16.0",
     "pdfjs-dist": "^5.3.93",
     "react": "^18.2.0",

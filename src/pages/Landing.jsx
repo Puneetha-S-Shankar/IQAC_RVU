@@ -6,6 +6,7 @@ import iqac4 from "../assets/iqac4.jpg";
 import './Landing.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { Document, Page, pdfjs } from 'react-pdf';
+import { motion } from "framer-motion"; 
 // import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 // import 'react-pdf/dist/esm/Page/TextLayer.css';
 
