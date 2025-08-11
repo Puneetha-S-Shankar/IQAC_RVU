@@ -36,7 +36,8 @@ router.get('/category/:category', async (req, res) => {
     const { category } = req.params;
     const db = mongoose.connection.db;
     
-    const files = await db.collection('files.files').find({
+    // Get all files from master collection only
+    const files = await db.collection('master-files.files').find({
       'metadata.category': category
     }).toArray();
     
@@ -61,12 +62,12 @@ router.get('/category/:category', async (req, res) => {
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+        return res.status(400).json({ error: 'No file uploaded' });
     }
     
     const db = mongoose.connection.db;
     const bucket = new mongoose.mongo.GridFSBucket(db, {
-      bucketName: 'files'
+      bucketName: 'master-files'
     });
 
     const { docNumber, category, assignmentId, uploaderEmail } = req.body;
@@ -92,7 +93,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       }
       
       // Check for existing file for this assignment and delete it
-      const existing = await db.collection('files.files').findOne({
+      const existing = await db.collection('master-files.files').findOne({
         'metadata.category': category,
         'metadata.assignmentId': assignmentId
       });
@@ -148,7 +149,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     
     // Original logic for document number based uploads (teaching-and-learning without assignment)
     if (category === 'teaching-and-learning' && docNumber) {
-      const existing = await db.collection('files.files').findOne({
+      const existing = await db.collection('master-files.files').findOne({
         'metadata.category': category,
         'metadata.docNumber': parseInt(docNumber)
       });
@@ -167,7 +168,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         'metadata.semester': req.body.semester || '',
         'metadata.docType': req.body.docType || ''
       };
-      const existing = await db.collection('files.files').findOne(metaQuery);
+      const existing = await db.collection('master-files.files').findOne(metaQuery);
       if (existing) {
         await bucket.delete(existing._id);
       }
@@ -246,7 +247,7 @@ router.get('/', async (req, res) => {
       }
     });
 
-    const files = await db.collection('files.files').find(query).toArray();
+    const files = await db.collection('master-files.files').find(query).toArray();
     res.json({ files });
   } catch (error) {
     console.error('Get files error:', error);
@@ -258,7 +259,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const db = mongoose.connection.db;
-    const file = await db.collection('files.files').findOne({ _id: new ObjectId(req.params.id) });
+    const file = await db.collection('master-files.files').findOne({ _id: new ObjectId(req.params.id) });
     if (!file) {
       return res.status(404).json({ error: 'File not found' });
     }
@@ -275,16 +276,11 @@ router.get('/:id/download', async (req, res) => {
     const db = mongoose.connection.db;
     const fileId = req.params.id;
     
-    // First try uploads bucket (for assignment files)
-    let file = await db.collection('uploads.files').findOne({ _id: new ObjectId(fileId) });
-    let bucketName = 'uploads';
+    // Use master-files collection only
+    let file = await db.collection('master-files.files').findOne({ _id: new ObjectId(fileId) });
+    let bucketName = 'master-files';
     
-    // If not found, try files bucket (for general files)
-    if (!file) {
-      file = await db.collection('files.files').findOne({ _id: new ObjectId(fileId) });
-      bucketName = 'files';
-    }
-    
+    // No fallback needed - everything is in master-files now
     if (!file) {
       return res.status(404).json({ error: 'File not found' });
     }
@@ -316,10 +312,10 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const db = mongoose.connection.db;
-    const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: 'files' });
+  const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: 'master-files' });
     
     // Check if file exists
-    const file = await db.collection('files.files').findOne({ _id: new ObjectId(id) });
+    const file = await db.collection('master-files.files').findOne({ _id: new ObjectId(id) });
     if (!file) {
       return res.status(404).json({ error: 'File not found' });
     }

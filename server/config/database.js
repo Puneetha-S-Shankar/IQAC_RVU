@@ -15,10 +15,19 @@ class DatabaseConfig {
       }
 
       const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/iqac_rvu';
-      await mongoose.connect(uri, {
+      
+      // Enhanced connection options for better reliability
+      const options = {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-      });
+        serverSelectionTimeoutMS: 30000, // Increase server selection timeout
+        connectTimeoutMS: 30000, // Increase connection timeout
+        socketTimeoutMS: 45000, // Increase socket timeout
+        maxPoolSize: 10, // Maximum number of connections
+        retryWrites: true,
+      };
+      
+      await mongoose.connect(uri, options);
 
       this.db = mongoose.connection.db;
       this.masterBucket = new GridFSBucket(this.db, { bucketName: 'master-files' });

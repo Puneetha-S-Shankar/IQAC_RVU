@@ -310,6 +310,9 @@ router.delete('/:taskId', async (req, res) => {
 // Get all tasks (Admin can see all, users see assigned tasks)
 router.get('/', async (req, res) => {
   try {
+    console.log('GET /api/tasks - User:', req.user);
+    console.log('GET /api/tasks - Query params:', req.query);
+    
     const requestingUser = req.user;
     const { status, user } = req.query; // Get query parameters
     let filter = {};
@@ -330,6 +333,7 @@ router.get('/', async (req, res) => {
     let tasks;
     
     if (requestingUser.role === 'admin') {
+      console.log('GET /api/tasks - Admin user, filter:', filter);
       // Admin sees all tasks (with optional filters)
       tasks = await Task.find(filter)
         .populate('assignedToInitiator', 'username email')
@@ -347,6 +351,7 @@ router.get('/', async (req, res) => {
       
       // Combine user filter with other filters
       const combinedFilter = { ...filter, ...userFilter };
+      console.log('GET /api/tasks - Regular user, filter:', combinedFilter);
       
       tasks = await Task.find(combinedFilter)
         .populate('assignedToInitiator', 'username email')
@@ -355,16 +360,21 @@ router.get('/', async (req, res) => {
         .sort({ createdAt: -1 });
     }
     
+    console.log('GET /api/tasks - Found tasks:', tasks.length);
     res.json(tasks);
   } catch (error) {
     console.error('Fetch tasks error:', error);
-    res.status(500).json({ error: 'Failed to fetch tasks' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: 'Failed to fetch tasks', details: error.message });
   }
 });
 
 // Create a new task (simplified API endpoint)
 router.post('/', async (req, res) => {
   try {
+    console.log('POST /api/tasks - Request body:', req.body);
+    console.log('POST /api/tasks - User:', req.user);
+    
     const {
       title,
       description,
@@ -376,6 +386,11 @@ router.post('/', async (req, res) => {
       assignmentType
     } = req.body;
     
+    console.log('POST /api/tasks - Extracted data:', {
+      title, description, courseCode, courseName, 
+      assignedToInitiator, assignedToReviewer, category, assignmentType
+    });
+    
     // Create the task
     const task = new Task({
       title: title || `${courseCode} ${assignmentType || 'Assignment'}`,
@@ -385,17 +400,23 @@ router.post('/', async (req, res) => {
       assignedToInitiator,
       assignedToReviewer,
       assignedBy: req.user._id,
-      category: category || assignmentType,
-      status: 'pending'
+      category: assignmentType || category || 'course-material', // Map assignmentType to category
+      deadline: new Date(req.body.deadline),
+      status: 'assigned'
     });
     
+    console.log('POST /api/tasks - Task to save:', task);
+    
     await task.save();
+    
+    console.log('POST /api/tasks - Task saved successfully');
     
     // Create notifications for assigned users
     if (assignedToInitiator) {
       const initiatorNotification = new Notification({
         userId: assignedToInitiator,
         type: 'task_assigned',
+        title: 'New Task Assigned',
         message: `You have been assigned as initiator for: ${task.title}`,
         taskId: task._id
       });
@@ -406,6 +427,7 @@ router.post('/', async (req, res) => {
       const reviewerNotification = new Notification({
         userId: assignedToReviewer,
         type: 'task_assigned',
+        title: 'New Review Task Assigned',
         message: `You have been assigned as reviewer for: ${task.title}`,
         taskId: task._id
       });
@@ -423,7 +445,8 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Task creation error:', error);
-    res.status(500).json({ error: 'Failed to create task' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: 'Failed to create task', details: error.message });
   }
 });
 

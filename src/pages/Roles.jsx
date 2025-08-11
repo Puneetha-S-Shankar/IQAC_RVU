@@ -23,7 +23,8 @@ const Roles = () => {
     initiatorId: '',
     reviewerId: '',
     assignmentType: '',
-    description: ''
+    description: '',
+    deadline: ''
   });
 
   // User creation form state
@@ -220,6 +221,12 @@ const Roles = () => {
 
   const handleAssignmentSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (loading) {
+      return;
+    }
+    
     setLoading(true);
 
     if (!selectedInitiator || !selectedReviewer) {
@@ -234,14 +241,30 @@ const Roles = () => {
       return;
     }
 
+    // Check for duplicate assignments
+    const duplicateAssignment = assignments.find(assignment => 
+      assignment.assignedToInitiator === selectedInitiator._id &&
+      assignment.assignedToReviewer === selectedReviewer._id &&
+      assignment.assignmentType === assignmentForm.assignmentType &&
+      assignment.courseCode === selectedInitiator.courseCode &&
+      assignment.deadline === assignmentForm.deadline
+    );
+
+    if (duplicateAssignment) {
+      showMessage('A similar assignment already exists for these users', 'error');
+      setLoading(false);
+      return;
+    }
+
     try {
       const assignmentData = {
-        initiatorEmail: selectedInitiator.email,
-        reviewerEmail: selectedReviewer.email,
+        assignedToInitiator: selectedInitiator._id,
+        assignedToReviewer: selectedReviewer._id,
         courseCode: selectedInitiator.courseCode,
         courseName: selectedInitiator.courseName,
         assignmentType: assignmentForm.assignmentType,
-        description: assignmentForm.description
+        description: assignmentForm.description,
+        deadline: assignmentForm.deadline
       };
 
       const response = await fetch('http://localhost:5000/api/tasks', {
@@ -261,7 +284,8 @@ const Roles = () => {
           initiatorId: '',
           reviewerId: '',
           assignmentType: '',
-          description: ''
+          description: '',
+          deadline: ''
         });
         setSelectedInitiator(null);
         setSelectedReviewer(null);
@@ -272,7 +296,11 @@ const Roles = () => {
       }
     } catch (error) {
       console.error('Error creating assignment:', error);
-      showMessage('Error creating assignment', 'error');
+      if (error.message === 'Failed to fetch' || error.name === 'NetworkError') {
+        showMessage('Network error: Unable to connect to server. Please check your connection and try again.', 'error');
+      } else {
+        showMessage('Error creating assignment. Please try again.', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -481,6 +509,17 @@ const Roles = () => {
                 onChange={(e) => setAssignmentForm({...assignmentForm, description: e.target.value})}
                 placeholder="Assignment description and instructions..."
                 required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Deadline</label>
+              <input
+                type="date"
+                value={assignmentForm.deadline}
+                onChange={(e) => setAssignmentForm({...assignmentForm, deadline: e.target.value})}
+                required
+                min={new Date().toISOString().split('T')[0]}
               />
             </div>
           </div>

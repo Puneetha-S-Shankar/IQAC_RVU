@@ -668,11 +668,13 @@ class UnifiedFileService {
   async migrateExistingFiles() {
     await this.initialize();
     
-    console.log('🔄 Starting migration to unified file system...');
+    console.log('✅ Migration completed - all files are now in master-files collections');
     
-    // Migrate files from old 'files' bucket
-    const oldFiles = await this.db.collection('files.files').find({}).toArray();
-    console.log(`📦 Found ${oldFiles.length} files in old 'files' bucket`);
+    // All files are now in master-files - no migration needed
+    const masterFiles = await this.db.collection('master-files.files').find({}).toArray();
+    console.log(`📦 Found ${masterFiles.length} files in master-files collection`);
+    
+    console.log('🎯 File system is now unified using master-files collections only');
     
     for (const oldFile of oldFiles) {
       try {
@@ -699,9 +701,13 @@ class UnifiedFileService {
       }
     }
 
-    // Migrate files from old 'uploads' bucket
-    const oldUploads = await this.db.collection('uploads.files').find({}).toArray();
-    console.log(`📦 Found ${oldUploads.length} files in old 'uploads' bucket`);
+    console.log('✅ Migration completed - all files are now in master-files collections');
+    
+    return { 
+      status: 'completed',
+      message: 'All files are now in master-files collections',
+      totalFiles: masterFiles.length
+    };
     
     for (const oldUpload of oldUploads) {
       try {

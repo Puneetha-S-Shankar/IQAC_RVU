@@ -89,7 +89,7 @@ class DatabaseService {
     };
 
     // Check for existing file with same metadata
-    const existing = await this.db.collection('files.files').findOne({
+    const existing = await this.db.collection('master-files.files').findOne({
       'metadata.programme': metadata.programme,
       'metadata.docLevel': metadata.docLevel,
       'metadata.year': metadata.year,
@@ -145,7 +145,7 @@ class DatabaseService {
       metadataQuery[`metadata.${key}`] = query[key];
     });
 
-    const files = await this.db.collection('files.files').find(metadataQuery).toArray();
+    const files = await this.db.collection('master-files.files').find(metadataQuery).toArray();
     
     return files.map(file => ({
       _id: file._id,
@@ -169,7 +169,7 @@ class DatabaseService {
 
   async findFileById(id) {
     await this.initialize();
-    const file = await this.db.collection('files.files').findOne({ _id: new ObjectId(id) });
+    const file = await this.db.collection('master-files.files').findOne({ _id: new ObjectId(id) });
     
     if (!file) return null;
     
@@ -201,7 +201,7 @@ class DatabaseService {
       metadataUpdate[`metadata.${key}`] = updateData[key];
     });
 
-    const result = await this.db.collection('files.files').findOneAndUpdate(
+    const result = await this.db.collection('master-files.files').findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: metadataUpdate },
       { returnDocument: 'after' }
@@ -342,12 +342,12 @@ class DatabaseService {
     await this.initialize();
     
     const userCount = await this.db.collection('users').countDocuments();
-    const fileCount = await this.db.collection('files.files').countDocuments();
+    const fileCount = await this.db.collection('master-files.files').countDocuments();
     const curriculumCount = await this.db.collection('curriculum').countDocuments();
     const reportCount = await this.db.collection('reports').countDocuments();
     
     // Calculate total file size
-    const fileStats = await this.db.collection('files.files').aggregate([
+    const fileStats = await this.db.collection('master-files.files').aggregate([
       {
         $group: {
           _id: null,

@@ -24,9 +24,35 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 async function connectDatabase() {
   try {
     await databaseConfig.connect();
+    
+    // Add connection event listeners for monitoring
+    mongoose.connection.on('connected', () => {
+      console.log('🔗 MongoDB connection established');
+    });
+    
+    mongoose.connection.on('error', (error) => {
+      console.error('❌ MongoDB connection error:', error);
+    });
+    
+    mongoose.connection.on('disconnected', () => {
+      console.warn('⚠️ MongoDB disconnected');
+    });
+    
+    mongoose.connection.on('reconnected', () => {
+      console.log('🔄 MongoDB reconnected');
+    });
+    
+    // Handle connection interruption
+    process.on('SIGINT', async () => {
+      await mongoose.connection.close();
+      console.log('🔌 MongoDB connection closed due to app termination');
+      process.exit(0);
+    });
+    
   } catch (error) {
     console.error('❌ Failed to connect to database:', error.message);
-    process.exit(1);
+    console.error('🔄 Retrying in 5 seconds...');
+    setTimeout(connectDatabase, 5000);
   }
 }
 

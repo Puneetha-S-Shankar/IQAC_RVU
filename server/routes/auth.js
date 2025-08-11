@@ -21,9 +21,16 @@ const authenticateToken = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.userId).select('-password');
-    
     console.log('Auth middleware - Decoded:', decoded);
+    
+    // Add timeout and retry for database query
+    const user = await Promise.race([
+      User.findById(decoded.userId).select('-password').lean(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database query timeout')), 15000)
+      )
+    ]);
+    
     console.log('Auth middleware - User found:', user ? {
       id: user._id,
       email: user.email,
@@ -38,7 +45,17 @@ const authenticateToken = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Auth verification error:', error);
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    
+    // Specific error handling for different types of errors
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(403).json({ error: 'Invalid token' });
+    } else if (error.name === 'TokenExpiredError') {
+      return res.status(403).json({ error: 'Token expired' });
+    } else if (error.message === 'Database query timeout') {
+      return res.status(503).json({ error: 'Database temporarily unavailable' });
+    } else {
+      return res.status(403).json({ error: 'Authentication failed' });
+    }
   }
 };
 
