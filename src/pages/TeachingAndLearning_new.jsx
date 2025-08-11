@@ -65,7 +65,7 @@ const TeachingAndLearning = () => {
 
   const fetchUserAssignments = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/assignments/assignments`, {
+      const response = await fetch(`http://localhost:5000/api/tasks`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

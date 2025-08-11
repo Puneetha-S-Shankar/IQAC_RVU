@@ -2,7 +2,11 @@ const express = require('express');
 const Task = require('../models/Task');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const { authenticateToken } = require('./auth');
 const router = express.Router();
+
+// Apply authentication to all routes
+router.use(authenticateToken);
 
 // Create a new task (Admin only)
 router.post('/create', async (req, res) => {
@@ -300,6 +304,155 @@ router.delete('/:taskId', async (req, res) => {
   } catch (error) {
     console.error('Task deletion error:', error);
     res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+// Get all tasks (Admin can see all, users see assigned tasks)
+router.get('/', async (req, res) => {
+  try {
+    const requestingUser = req.user;
+    const { status, user } = req.query; // Get query parameters
+    let filter = {};
+    
+    // Add status filter if provided
+    if (status) {
+      filter.status = status;
+    }
+    
+    // Add user filter if provided (for specific user's tasks)
+    if (user) {
+      filter.$or = [
+        { assignedToInitiator: user },
+        { assignedToReviewer: user }
+      ];
+    }
+    
+    let tasks;
+    
+    if (requestingUser.role === 'admin') {
+      // Admin sees all tasks (with optional filters)
+      tasks = await Task.find(filter)
+        .populate('assignedToInitiator', 'username email')
+        .populate('assignedToReviewer', 'username email')
+        .populate('assignedBy', 'username email')
+        .sort({ createdAt: -1 });
+    } else {
+      // Users see only their assigned tasks (with optional filters)
+      const userFilter = {
+        $or: [
+          { assignedToInitiator: requestingUser._id },
+          { assignedToReviewer: requestingUser._id }
+        ]
+      };
+      
+      // Combine user filter with other filters
+      const combinedFilter = { ...filter, ...userFilter };
+      
+      tasks = await Task.find(combinedFilter)
+        .populate('assignedToInitiator', 'username email')
+        .populate('assignedToReviewer', 'username email')
+        .populate('assignedBy', 'username email')
+        .sort({ createdAt: -1 });
+    }
+    
+    res.json(tasks);
+  } catch (error) {
+    console.error('Fetch tasks error:', error);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+});
+
+// Create a new task (simplified API endpoint)
+router.post('/', async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      courseCode,
+      courseName,
+      assignedToInitiator,
+      assignedToReviewer,
+      category,
+      assignmentType
+    } = req.body;
+    
+    // Create the task
+    const task = new Task({
+      title: title || `${courseCode} ${assignmentType || 'Assignment'}`,
+      description,
+      courseCode,
+      courseName,
+      assignedToInitiator,
+      assignedToReviewer,
+      assignedBy: req.user._id,
+      category: category || assignmentType,
+      status: 'pending'
+    });
+    
+    await task.save();
+    
+    // Create notifications for assigned users
+    if (assignedToInitiator) {
+      const initiatorNotification = new Notification({
+        userId: assignedToInitiator,
+        type: 'task_assigned',
+        message: `You have been assigned as initiator for: ${task.title}`,
+        taskId: task._id
+      });
+      await initiatorNotification.save();
+    }
+    
+    if (assignedToReviewer && assignedToReviewer !== assignedToInitiator) {
+      const reviewerNotification = new Notification({
+        userId: assignedToReviewer,
+        type: 'task_assigned',
+        message: `You have been assigned as reviewer for: ${task.title}`,
+        taskId: task._id
+      });
+      await reviewerNotification.save();
+    }
+    
+    const populatedTask = await Task.findById(task._id)
+      .populate('assignedToInitiator', 'username email')
+      .populate('assignedToReviewer', 'username email')
+      .populate('assignedBy', 'username email');
+    
+    res.status(201).json({ 
+      message: 'Task created successfully',
+      task: populatedTask
+    });
+  } catch (error) {
+    console.error('Task creation error:', error);
+    res.status(500).json({ error: 'Failed to create task' });
+  }
+});
+
+// Update a task
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    const task = await Task.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    )
+      .populate('assignedToInitiator', 'username email')
+      .populate('assignedToReviewer', 'username email')
+      .populate('assignedBy', 'username email');
+    
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    res.json({
+      message: 'Task updated successfully',
+      task
+    });
+  } catch (error) {
+    console.error('Task update error:', error);
+    res.status(500).json({ error: 'Failed to update task' });
   }
 });
 

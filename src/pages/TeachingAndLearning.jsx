@@ -84,8 +84,8 @@ const TeachingAndLearning = () => {
     try {
       // Use different endpoints based on user role
       const endpoint = userRole === 'admin' 
-        ? `http://localhost:5000/api/assignments/assignments`
-        : `http://localhost:5000/api/assignments/assignments/my-tasks`;
+        ? `http://localhost:5000/api/tasks`
+        : `http://localhost:5000/api/tasks`;
         
       const response = await fetch(endpoint, {
         headers: {
@@ -108,11 +108,11 @@ const TeachingAndLearning = () => {
 
   const fetchApprovedDocuments = async () => {
     try {
-      // For admin: get all completed assignments
-      // For users: get completed assignments for their course
+      // For admin: get all completed tasks
+      // For users: get completed tasks for their assignments
       const endpoint = (userRole === 'admin' || userRole === 'super_admin' || currentUser?.role === 'super_admin')
-        ? `http://localhost:5000/api/assignments/assignments/completed`
-        : `http://localhost:5000/api/assignments/assignments/completed/my-course`;
+        ? `http://localhost:5000/api/tasks?status=completed`
+        : `http://localhost:5000/api/tasks?status=completed&user=${currentUser?._id}`;
         
       const response = await fetch(endpoint, {
         headers: {
@@ -127,7 +127,10 @@ const TeachingAndLearning = () => {
         
         // Extract unique courses for filtering (admin only)
         if (userRole === 'admin' || userRole === 'super_admin' || currentUser?.role === 'super_admin') {
-          const courses = [...new Set((documents || []).map(doc => doc.courseCode))];
+          const courses = [...new Set((documents || [])
+            .map(doc => doc.courseCode)
+            .filter(code => code && code.trim())
+          )];
           setAvailableCourses(courses);
         }
       } else {
@@ -285,8 +288,8 @@ const TeachingAndLearning = () => {
 
   const handleReview = async (assignmentId, action, comment = '') => {
     try {
-      const response = await fetch(`http://localhost:5000/api/assignments/assignments/${assignmentId}/review`, {
-        method: 'POST',
+      const response = await fetch(`http://localhost:5000/api/tasks/${assignmentId}/${action}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getToken()}`
@@ -336,8 +339,8 @@ const TeachingAndLearning = () => {
 
   const handleAdminApprove = async (assignmentId, comment = '') => {
     try {
-      const response = await fetch(`http://localhost:5000/api/assignments/assignments/${assignmentId}/admin-approve`, {
-        method: 'POST',
+      const response = await fetch(`http://localhost:5000/api/tasks/${assignmentId}/approve`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getToken()}`
@@ -659,12 +662,13 @@ const TeachingAndLearning = () => {
               <div className="documents-filter">
                 <label>Filter by Course:</label>
                 <select
+                  key="course-filter-select"
                   value={courseFilter}
                   onChange={(e) => setCourseFilter(e.target.value)}
                 >
-                  <option value="">All Courses</option>
-                  {availableCourses.map(course => (
-                    <option key={course} value={course}>{course}</option>
+                  <option key="all-courses" value="">All Courses</option>
+                  {availableCourses.filter(course => course && course.trim()).map((course, index) => (
+                    <option key={`course-${index}-${course}`} value={course}>{course}</option>
                   ))}
                 </select>
               </div>

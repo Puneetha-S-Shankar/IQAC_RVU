@@ -75,7 +75,7 @@ const Roles = () => {
 
   const fetchAssignments = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/assignments/assignments', {
+      const response = await fetch('http://localhost:5000/api/tasks', {
         headers: {
           'Authorization': `Bearer ${getToken()}`
         }
@@ -94,8 +94,9 @@ const Roles = () => {
   };
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/assignments/users', {
+      const response = await fetch('http://localhost:5000/api/auth/users', {
         headers: {
           'Authorization': `Bearer ${getToken()}`
         }
@@ -103,13 +104,43 @@ const Roles = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setUsers(data);
+        console.log('Fetched users data:', data); // Debug log
+        console.log('Data type:', typeof data); // Debug log
+        console.log('Is array:', Array.isArray(data)); // Debug log
+        
+        // Handle both direct array and wrapped object formats
+        let usersArray;
+        if (Array.isArray(data)) {
+          usersArray = data;
+        } else if (data && Array.isArray(data.users)) {
+          usersArray = data.users;
+        } else {
+          console.error('Users data is not in expected format:', data);
+          setUsers([]);
+          showMessage('Invalid users data format', 'error');
+          setLoading(false);
+          return;
+        }
+        
+        console.log('Final users array:', usersArray);
+        setUsers(usersArray);
+      } else if (response.status === 401) {
+        console.error('Authentication failed - redirecting to login');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
       } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to fetch users:', response.status, errorData);
+        setUsers([]);
         showMessage('Failed to fetch users', 'error');
       }
     } catch (error) {
       console.error('Error fetching users:', error);
+      setUsers([]);
       showMessage('Error fetching users', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -121,23 +152,21 @@ const Roles = () => {
   // Course code/name handlers
   const handleCourseCodeChange = (e) => {
     const courseCode = e.target.value;
-    const courseName = getCourseNameByCode(courseCode);
     
     setUserForm({
       ...userForm, 
       courseCode,
-      courseName
+      // Don't auto-fill course name
     });
   };
 
   const handleCourseNameChange = (e) => {
     const courseName = e.target.value;
-    const courseCode = getCourseCodeByName(courseName);
     
     setUserForm({
       ...userForm, 
-      courseCode: courseCode || userForm.courseCode, // Keep existing code if no match
       courseName
+      // Don't auto-fill course code
     });
   };
 
@@ -160,8 +189,8 @@ const Roles = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/assignments/assignments/${editingAssignment._id}/update`, {
-        method: 'PATCH',
+      const response = await fetch(`http://localhost:5000/api/tasks/${editingAssignment._id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getToken()}`
@@ -215,7 +244,7 @@ const Roles = () => {
         description: assignmentForm.description
       };
 
-      const response = await fetch('http://localhost:5000/api/assignments/assignments', {
+      const response = await fetch('http://localhost:5000/api/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -291,7 +320,7 @@ const Roles = () => {
 
   const handleUserRoleUpdate = async (userId, field, value) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/assignments/users/${userId}`, {
+      const response = await fetch(`http://localhost:5000/api/auth/users/${userId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -347,7 +376,15 @@ const Roles = () => {
   };
 
   const renderAssignments = () => {
-    const nonAdminUsers = users.filter(u => u.role !== 'admin' && u.role !== 'viewer');
+    console.log('renderAssignments - users:', users); // Debug log
+    console.log('renderAssignments - users type:', typeof users); // Debug log
+    console.log('renderAssignments - users is array:', Array.isArray(users)); // Debug log
+    
+    // Ensure users is always an array
+    const safeUsers = Array.isArray(users) ? users : [];
+    const nonAdminUsers = safeUsers.filter(u => u && u.role !== 'admin' && u.role !== 'viewer');
+    
+    console.log('renderAssignments - nonAdminUsers:', nonAdminUsers); // Debug log
     
     return (
       <div className="roles-content">
@@ -562,7 +599,7 @@ const Roles = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {(users || []).map((user) => (
                 <tr key={user._id}>
                   <td>{user.name}</td>
                   <td>{user.email}</td>
@@ -725,7 +762,7 @@ const Roles = () => {
                 </option>
               ))}
             </select>
-            <small className="form-help">Primary key - selecting this will auto-fill course name</small>
+            <small className="form-help">Select the course code for the user</small>
           </div>
           <div className="form-group">
             <label>Course Name</label>
@@ -733,8 +770,7 @@ const Roles = () => {
               type="text"
               value={userForm.courseName}
               onChange={handleCourseNameChange}
-              placeholder="Auto-filled when course code is selected"
-              disabled={!!userForm.courseCode}
+              placeholder="Enter course name"
             />
             <small className="form-help">Auto-filled from course code selection</small>
           </div>
@@ -778,10 +814,22 @@ const Roles = () => {
         </button>
       </div>
 
-      {activeTab === 'assignments' && renderAssignments()}
+      {activeTab === 'assignments' && Array.isArray(users) && renderAssignments()}
+      {activeTab === 'assignments' && !Array.isArray(users) && (
+        <div className="roles-content">
+          <h2>Loading...</h2>
+          <p>Loading user data...</p>
+        </div>
+      )}
       {activeTab === 'records' && renderRecords()}
       {activeTab === 'create' && renderUserCreate()}
-      {activeTab === 'users' && renderUserRoles()}
+      {activeTab === 'users' && Array.isArray(users) && renderUserRoles()}
+      {activeTab === 'users' && !Array.isArray(users) && (
+        <div className="roles-content">
+          <h2>Loading...</h2>
+          <p>Loading user data...</p>
+        </div>
+      )}
 
       {/* Assignment Edit Modal */}
       {showEditModal && editingAssignment && (
@@ -822,7 +870,7 @@ const Roles = () => {
                   onChange={(e) => setEditingAssignment({...editingAssignment, assignedToInitiator: e.target.value})}
                 >
                   <option value="">Select Initiator</option>
-                  {users.filter(user => user.role !== 'admin').map(user => (
+                  {(users || []).filter(user => user.role !== 'admin').map(user => (
                     <option key={user._id} value={user._id}>
                       {user.name} ({user.email})
                     </option>
@@ -837,7 +885,7 @@ const Roles = () => {
                   onChange={(e) => setEditingAssignment({...editingAssignment, assignedToReviewer: e.target.value})}
                 >
                   <option value="">Select Reviewer</option>
-                  {users.filter(user => user.role !== 'admin').map(user => (
+                  {(users || []).filter(user => user.role !== 'admin').map(user => (
                     <option key={user._id} value={user._id}>
                       {user.name} ({user.email})
                     </option>

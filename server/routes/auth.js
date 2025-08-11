@@ -190,10 +190,10 @@ router.put('/profile/:id', async (req, res) => {
 });
 
 // Get all users (admin only)
-router.get('/users', async (req, res) => {
+router.get('/users', authenticateToken, async (req, res) => {
   try {
     const users = await User.find().select('-password');
-    res.json({ users });
+    res.json(users); // Return array directly
   } catch (err) {
     console.error('Get users error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -244,7 +244,7 @@ router.post('/create-admin', async (req, res) => {
 });
 
 // Update user role (admin only)
-router.put('/users/:id/role', async (req, res) => {
+router.put('/users/:id/role', authenticateToken, async (req, res) => {
   try {
     const { role } = req.body;
     
@@ -268,6 +268,35 @@ router.put('/users/:id/role', async (req, res) => {
     });
   } catch (err) {
     console.error('Update role error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update user (admin only)
+router.patch('/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const updateData = req.body;
+    
+    // Remove sensitive fields that shouldn't be updated this way
+    delete updateData.password;
+    delete updateData._id;
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ 
+      message: 'User updated successfully',
+      user: updatedUser
+    });
+  } catch (err) {
+    console.error('Update user error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
