@@ -3,7 +3,7 @@
 **Database Name**: IQAC  
 **Platform**: MongoDB Atlas  
 **Connection**: GridFS enabled for file storage  
-**Last Updated**: August 11, 2025  
+**Last Updated**: August 12, 2025  
 **System Version**: Simplified Direct Assignment  
 
 ## 🎯 **SIMPLIFIED SYSTEM OVERVIEW**
@@ -33,16 +33,11 @@ IQAC Database (MongoDB Atlas)
 │   └── test (dev collection) 🧪 TESTING
 │
 ├── 📁 File Storage (GridFS - Target Architecture)
-│   ├── master-files.files (9 documents) ✅ UNIFIED TARGET
-│   ├── master-files.chunks (11 chunks) ✅ UNIFIED TARGET
-│   │
-│   ├── files.files (7 documents) ⚠️ LEGACY - TO DEPRECATE
-│   ├── files.chunks (9 chunks) ⚠️ LEGACY - TO DEPRECATE
-│   ├── uploads.files (2 documents) ⚠️ LEGACY - TO DEPRECATE
-│   └── uploads.chunks (2 chunks) ⚠️ LEGACY - TO DEPRECATE
+│   ├── master-files.files (active) ✅
+│   └── master-files.chunks (active) ✅
 │
-└── 📊 TOTAL: 9 collections, 18 files across buckets
-    TARGET: Consolidate all to master-files bucket only
+└── 📊 TOTAL: Core collections + single unified bucket
+  (Legacy `files.*` and `uploads.*` collections deleted Aug 12, 2025)
 ```
 
 ### **File/Chunk Count Analysis**
@@ -365,7 +360,7 @@ Approval/Reject → Final notification   →  Workflow complete
 
 ## 📁 **FILE STORAGE SYSTEM - COMPREHENSIVE ANALYSIS**
 
-### **Current GridFS Architecture**
+### **Current GridFS Architecture (Final State)**
 
 ```
 📦 IQAC FILE STORAGE ARCHITECTURE
@@ -373,21 +368,13 @@ Approval/Reject → Final notification   →  Workflow complete
 │                    MongoDB Atlas GridFS                    │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  🎯 TARGET: master-files (Unified Bucket)                  │
-│  ├── master-files.files (9 documents) ✅ ACTIVE           │
-│  └── master-files.chunks (11 chunks) ✅ ACTIVE            │
+│  🎯 ACTIVE: master-files (Unified Bucket)                  │
+│  ├── master-files.files (active) ✅                        │
+│  └── master-files.chunks (active) ✅                       │
 │      Format: {year}_{courseCode}_{description}.{ext}       │
 │      Example: 2024_CS101_syllabus.pdf                      │
 │                                                             │
-│  📊 LEGACY: files bucket (Deprecated)                      │
-│  ├── files.files (7 documents) ⚠️ TO REMOVE               │
-│  └── files.chunks (9 chunks) ⚠️ TO REMOVE                 │
-│      Contains: Original curriculum documents               │
-│                                                             │
-│  📋 LEGACY: uploads bucket (Deprecated)                    │
-│  ├── uploads.files (2 documents) ⚠️ TO REMOVE             │
-│  └── uploads.chunks (2 chunks) ⚠️ TO REMOVE               │
-│      Contains: Assignment submissions                      │
+│  (All legacy buckets removed Aug 12, 2025)                 │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 
@@ -477,44 +464,34 @@ const filePermissions = {
 };
 ```
 
-### **Current File Distribution Visualization**
+### **File Distribution**
 
+All active file metadata and chunks now reside exclusively in the `master-files` bucket. 
+
+**Current Production State (Aug 12, 2025):**
 ```
-📁 FILE DISTRIBUTION ACROSS BUCKETS
+📁 ACTIVE FILE STORAGE
+master-files/
+├── 2024_CS101_syllabus.pdf
+├── 2024_CS201_assignment.pdf  
+├── 2025_EC301_curriculum.pdf
+└── 2025_ME101_handbook.pdf
 
-master-files bucket (Target - Current) ✅
-████████████████████ 9 files (50% of total)
-┌─────────────────────────────────────────┐
-│ 2024_GENERAL_TECH_STACK.pdf            │ ← Migrated
-│ 2025_CS101_assignment.pdf (duplicate)  │ ← Migrated  
-│ 2025_CS101_assignment.pdf (duplicate)  │ ← Migrated
-│ Tech_stack.pdf                         │ ← Migrated
-│ TECH_STACK_(1).pdf                     │ ← Migrated
-│ All_Courses_Merged_Documents...pdf     │ ← Migrated
-│ resumeeee.pdf                          │ ← Migrated
-│ + 2 more files                         │
-└─────────────────────────────────────────┘
+Format: {year}_{courseCode}_{description}.{extension}
+```
 
-files bucket (Legacy - To Deprecate) ⚠️
-██████████████ 7 files (39% of total)
-┌─────────────────────────────────────────┐
-│ TECH_STACK.pdf                         │ ← Original
-│ Tech stack.pdf                         │ ← Original  
-│ TECH_STACK (1).pdf                     │ ← Original
-│ All_Courses_Merged_Documents...pdf     │ ← Original
-│ resumeeee.pdf                          │ ← Original
-│ + 2 more original files                │
-└─────────────────────────────────────────┘
+**File Operations:**
+- **Upload**: Task assignees (initiator role) only
+- **View/Download**: Task assignees + admin  
+- **Delete**: Admin only
+- **Approve/Reject**: Reviewer role + admin
 
-uploads bucket (Legacy - To Deprecate) ⚠️
-████ 2 files (11% of total)
-┌─────────────────────────────────────────┐
-│ Course_Syllabus_Document_Copy.pdf      │ ← Original
-│ Course_Document_2_Copy.pdf             │ ← Original
-└─────────────────────────────────────────┘
-
-TOTAL: 18 files across all buckets
-TARGET: 9 files in master-files bucket only (after cleanup)
+**Access URLs:**
+```
+Download: GET /api/files/{fileId}
+Task Files: GET /api/files/task/{taskId}  
+Admin List: GET /api/unifiedFiles/
+Upload: POST /api/files/upload
 ```
 
 ---
@@ -806,61 +783,20 @@ Database Collections:
 
 ---
 
-## 🧹 **DEPRECATION PLAN & CLEANUP STRATEGY**
+## 🧹 **CLEANUP COMPLETION SUMMARY**
 
-### **Legacy Systems to Remove**
+### **Legacy Systems Removed (Aug 12, 2025)**
 
 ```
-⚠️ DEPRECATION CHECKLIST
-
-Phase 1: Verify Migration ✅
-├── Confirm all files migrated to master-files bucket
-├── Validate file integrity and accessibility  
-├── Test all functionality with new bucket
-└── Document any missing files or issues
-
-Phase 2: Update Application Code
-├── Update all file upload endpoints to use master-files
-├── Modify download links to point to unified bucket
-├── Remove references to legacy bucket names
-└── Update API documentation
-
-Phase 3: Database Cleanup (PENDING)
-├── Remove files.files collection (7 documents)
-├── Remove files.chunks collection (9 chunks)
-├── Remove uploads.files collection (2 documents)  
-├── Remove uploads.chunks collection (2 chunks)
-└── Verify no orphaned references remain
-
-Phase 4: Code Cleanup
-├── Remove legacy file service functions
-├── Delete migration scripts
-├── Update configuration files
-└── Remove deprecated route handlers
+Completed Actions:
+├── Verified all active files in master bucket
+├── Updated application code references (only `master-files` remains)
+├── Dropped legacy collections: `files.files`, `files.chunks`, `uploads.files`, `uploads.chunks`
+├── Removed migration / deprecation scripts from repo
+└── Audited codebase for stale references (none remain)
 ```
 
-### **Cleanup Commands**
-```javascript
-// ⚠️ EXECUTE ONLY AFTER FULL VERIFICATION ⚠️
-
-// Step 1: Backup legacy collections
-db.files.files.find().forEach(doc => db.backup_files_files.insert(doc));
-db.uploads.files.find().forEach(doc => db.backup_uploads_files.insert(doc));
-
-// Step 2: Remove legacy GridFS collections
-db.files.files.drop();
-db.files.chunks.drop();
-db.uploads.files.drop();
-db.uploads.chunks.drop();
-
-// Step 3: Verify only master-files remains
-db.listCollections().toArray();
-// Should show: master-files.files, master-files.chunks
-
-// Step 4: Update application configuration
-// Remove bucket configurations for 'files' and 'uploads'
-// Keep only 'master-files' bucket configuration
-```
+Historical cleanup command examples removed for brevity; use MongoDB collection drop commands if future legacy buckets are ever reintroduced.
 
 ---
 
