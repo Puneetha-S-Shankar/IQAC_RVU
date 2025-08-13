@@ -73,15 +73,33 @@ export default function Dashboard() {
       {/* Top Row */}
       <div className="dashboard-top-row">
         <div className="dashboard-card">
-          <div className="dashboard-image-placeholder">{/* Image here */}</div>
+          <div className="dashboard-image-placeholder">
+            <div className="placeholder-content">
+              <div className="placeholder-icon">🎯</div>
+              <div className="placeholder-text">MISSION</div>
+              <div className="placeholder-subtext">Excellence in Education</div>
+            </div>
+          </div>
           <div className="dashboard-card-title">Socse Mission and Vision</div>
         </div>
         <div className="dashboard-card">
-          <div className="dashboard-image-placeholder">{/* Image here */}</div>
+          <div className="dashboard-image-placeholder">
+            <div className="placeholder-content">
+              <div className="placeholder-icon">📚</div>
+              <div className="placeholder-text">OUTCOMES</div>
+              <div className="placeholder-subtext">Student Success</div>
+            </div>
+          </div>
           <div className="dashboard-card-title">Program Outcomes</div>
         </div>
         <div className="dashboard-card">
-          <div className="dashboard-image-placeholder">{/* Image here */}</div>
+          <div className="dashboard-image-placeholder">
+            <div className="placeholder-content">
+              <div className="placeholder-icon">🎓</div>
+              <div className="placeholder-text">OBJECTIVES</div>
+              <div className="placeholder-subtext">Academic Goals</div>
+            </div>
+          </div>
           <div className="dashboard-card-title">Program Educational Objectives</div>
         </div>
         
@@ -93,7 +111,11 @@ export default function Dashboard() {
               onClick={handleRoleManagementClick}
               style={{ cursor: "pointer" }}
             >
-              {/* Admin icon */}
+              <div className="placeholder-content">
+                <div className="placeholder-icon">⚙️</div>
+                <div className="placeholder-text">ADMIN</div>
+                <div className="placeholder-subtext">Role Control</div>
+              </div>
             </div>
             <div 
               className="dashboard-card-title"
@@ -118,7 +140,13 @@ export default function Dashboard() {
           onClick={handleCurriculumClick}
           style={{ cursor: "pointer" }}
         >
-          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-image-placeholder">
+            <div className="placeholder-content">
+              <div className="placeholder-icon">📖</div>
+              <div className="placeholder-text">CURRICULUM</div>
+              <div className="placeholder-subtext">Course Design</div>
+            </div>
+          </div>
           <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[0]}</div>
         </div>
         
@@ -131,7 +159,13 @@ export default function Dashboard() {
             onClick={handleTeachingAndLearningClick}
             style={{ cursor: "pointer" }}
           >
-            <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+            <div className="dashboard-image-placeholder">
+              <div className="placeholder-content">
+                <div className="placeholder-icon">👨‍🏫</div>
+                <div className="placeholder-text">TEACHING</div>
+                <div className="placeholder-subtext">Learning Methods</div>
+              </div>
+            </div>
             <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[1]}</div>
           </div>
         )}
@@ -143,7 +177,13 @@ export default function Dashboard() {
           onClick={undefined}
           style={{ cursor: "default" }}
         >
-          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-image-placeholder">
+            <div className="placeholder-content">
+              <div className="placeholder-icon">🔬</div>
+              <div className="placeholder-text">RESEARCH</div>
+              <div className="placeholder-subtext">Innovation</div>
+            </div>
+          </div>
           <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[2]}</div>
         </div>
         <div
@@ -153,7 +193,13 @@ export default function Dashboard() {
           onClick={undefined}
           style={{ cursor: "default" }}
         >
-          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-image-placeholder">
+            <div className="placeholder-content">
+              <div className="placeholder-icon">🏢</div>
+              <div className="placeholder-text">INFRASTRUCTURE</div>
+              <div className="placeholder-subtext">Facilities</div>
+            </div>
+          </div>
           <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[3]}</div>
         </div>
       </div>
@@ -165,7 +211,13 @@ export default function Dashboard() {
           onClick={undefined}
           style={{ cursor: "default" }}
         >
-          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-image-placeholder">
+            <div className="placeholder-content">
+              <div className="placeholder-icon">👥</div>
+              <div className="placeholder-text">STUDENT SUPPORT</div>
+              <div className="placeholder-subtext">Guidance</div>
+            </div>
+          </div>
           <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[4]}</div>
         </div>
         <div
@@ -175,7 +227,13 @@ export default function Dashboard() {
           onClick={undefined}
           style={{ cursor: "default" }}
         >
-          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-image-placeholder">
+            <div className="placeholder-content">
+              <div className="placeholder-icon">🏛️</div>
+              <div className="placeholder-text">GOVERNANCE</div>
+              <div className="placeholder-subtext">Leadership</div>
+            </div>
+          </div>
           <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[5]}</div>
         </div>
         <div
@@ -185,7 +243,13 @@ export default function Dashboard() {
           onClick={undefined}
           style={{ cursor: "default" }}
         >
-          <div className="dashboard-image-placeholder">{/* Optionally add icon/image */}</div>
+          <div className="dashboard-image-placeholder">
+            <div className="placeholder-content">
+              <div className="placeholder-icon">⭐</div>
+              <div className="placeholder-text">VALUES</div>
+              <div className="placeholder-subtext">Best Practices</div>
+            </div>
+          </div>
           <div className="dashboard-card-title" style={{ marginTop: 0 }}>{criteria[6]}</div>
         </div>
       </div>
