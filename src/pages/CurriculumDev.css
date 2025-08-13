@@ -201,51 +201,35 @@
   border-top-color: rgba(213, 171, 93, 0.5);
 }
 
-/* Image placeholder */
-.curriculum-dev-image-placeholder {
+/* Level labels */
+.curriculum-dev-level-label {
   width: 100%;
-  height: 140px;
+  height: 80px;
   background: linear-gradient(135deg, 
-    rgba(36, 61, 74, 0.6) 0%,
-    rgba(26, 51, 65, 0.7) 50%,
-    rgba(24, 46, 55, 0.6) 100%);
-  border: 1px solid rgba(213, 171, 93, 0.4);
+    rgba(213, 171, 93, 0.15) 0%,
+    rgba(213, 171, 93, 0.1) 50%,
+    rgba(213, 171, 93, 0.15) 100%);
+  border: 2px solid rgba(213, 171, 93, 0.4);
   border-radius: 8px;
   margin-bottom: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
-  font-size: 1.1rem;
-  font-weight: 500;
-  letter-spacing: 0.025em;
+  position: relative;
+  backdrop-filter: blur(10px);
   box-shadow: 
     0 4px 12px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-  padding: 8px;
-  position: relative;
-  backdrop-filter: blur(10px);
 }
 
-.curriculum-dev-image-placeholder::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at center, rgba(36, 61, 74, 0.15), transparent 60%);
-  pointer-events: none;
-}
-
-.curriculum-dev-image-placeholder img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  border-radius: 4px;
-  position: relative;
-  z-index: 2;
+.curriculum-dev-level-label h3 {
+  color: #f8fafc;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin: 0;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* Button group */

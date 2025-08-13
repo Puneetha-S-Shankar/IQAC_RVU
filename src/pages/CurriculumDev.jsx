@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import "./CurriculumDev.css";
-import curriculumImage from "../assets/curriculum-illustration.svg";
 
 const CurriculumDev = () => {
   const navigate = useNavigate();
@@ -23,12 +22,8 @@ const CurriculumDev = () => {
 
       <div className="curriculum-dev-columns">
         <div className="curriculum-dev-column">
-          <div className="curriculum-dev-image-placeholder">
-            <img 
-              src={curriculumImage} 
-              alt="Curriculum Development - Undergraduate Programs" 
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-            />
+          <div className="curriculum-dev-level-label">
+            <h3>Undergraduate (UG)</h3>
           </div>
           <div className="curriculum-dev-btn-group">
             <button className="curriculum-dev-nav-btn" onClick={() => handleProgramClick("BTECH")}>BTECH</button>
@@ -37,12 +32,8 @@ const CurriculumDev = () => {
           </div>
         </div>
         <div className="curriculum-dev-column">
-          <div className="curriculum-dev-image-placeholder">
-            <img 
-              src={curriculumImage} 
-              alt="Curriculum Development - Postgraduate Programs" 
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-            />
+          <div className="curriculum-dev-level-label">
+            <h3>Postgraduate (PG)</h3>
           </div>
           <div className="curriculum-dev-btn-group">
             <button className="curriculum-dev-nav-btn" onClick={() => handleProgramClick("MTECH")}>MTECH</button>
