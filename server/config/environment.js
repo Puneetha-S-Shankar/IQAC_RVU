@@ -39,7 +39,7 @@ const environment = {
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
   
   // File Naming Convention
-  FILE_NAMING_FORMAT: 'year_course.code_file.name',
+  FILE_NAMING_FORMAT: 'year_coursecode_docname',
   
   // Migration Configuration
   ENABLE_MIGRATION: process.env.ENABLE_MIGRATION === 'true' || false,

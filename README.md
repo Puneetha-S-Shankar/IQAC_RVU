@@ -151,7 +151,12 @@ master-files/
 └── 2025_ME101_handbook.pdf
 
 // Naming Convention
-filename = `${year}_${courseCode}_${description}.${ext}`
+filename = `${year}_${courseCode}_${docname}.${ext}`
+
+// Examples:
+// - 2024_CS101_Syllabus.pdf
+// - 2023_CS102_LessonPlan.docx  
+// - 2024_CS103_CourseAnalysis.pdf
 ```
 
 ### **File Upload Process**
@@ -167,7 +172,7 @@ filename = `${year}_${courseCode}_${description}.${ext}`
 ```javascript
 {
   _id: ObjectId("unique_file_id"),
-  filename: "2024_CS101_syllabus.pdf",
+  filename: "2024_CS101_Syllabus.pdf",
   originalName: "Course_Syllabus.pdf",
   uploadedBy: ObjectId("user_id"),
   taskId: ObjectId("task_id"),
