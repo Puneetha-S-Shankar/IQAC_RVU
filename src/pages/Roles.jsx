@@ -18,10 +18,8 @@ const Roles = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  // Assignment form state
+  // Assignment form state (Simplified for Dynamic Users)
   const [assignmentForm, setAssignmentForm] = useState({
-    initiatorId: '',
-    reviewerId: '',
     assignmentType: '',
     description: '',
     deadline: ''
@@ -39,11 +37,11 @@ const Roles = () => {
     courseName: ''
   });
 
-  // Data state
+  // Data state (Simplified for Dynamic Assignment)
   const [assignments, setAssignments] = useState([]);
   const [users, setUsers] = useState([]);
-  const [selectedInitiator, setSelectedInitiator] = useState(null);
-  const [selectedReviewer, setSelectedReviewer] = useState(null);
+  const [selectedInitiators, setSelectedInitiators] = useState([]);   // Dynamic initiators list
+  const [selectedReviewers, setSelectedReviewers] = useState([]);     // Dynamic reviewers list
 
   // Edit assignment modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -124,7 +122,15 @@ const Roles = () => {
         }
         
         console.log('Final users array:', usersArray);
-        setUsers(usersArray);
+        
+        // Enhance users with course information
+        const enhancedUsers = usersArray.map(user => ({
+          ...user,
+          courseCode: user.courseIds?.[0] || '',
+          courseName: user.courseIds?.[0] ? getCourseNameByCode(user.courseIds[0]) : ''
+        }));
+        
+        setUsers(enhancedUsers);
       } else if (response.status === 401) {
         console.error('Authentication failed - redirecting to login');
         localStorage.removeItem('token');
@@ -171,12 +177,32 @@ const Roles = () => {
     });
   };
 
-  // Edit assignment functions
+  // Edit assignment functions (Enhanced for Multiple Users)
   const handleEditAssignment = (assignment) => {
+    // Extract all initiators and reviewers (both array and legacy format)
+    const allInitiators = [];
+    const allReviewers = [];
+    
+    if (assignment.assignedToInitiators && assignment.assignedToInitiators.length > 0) {
+      allInitiators.push(...assignment.assignedToInitiators);
+    }
+    if (assignment.assignedToInitiator && 
+        !allInitiators.some(init => init._id === assignment.assignedToInitiator._id)) {
+      allInitiators.push(assignment.assignedToInitiator);
+    }
+    
+    if (assignment.assignedToReviewers && assignment.assignedToReviewers.length > 0) {
+      allReviewers.push(...assignment.assignedToReviewers);
+    }
+    if (assignment.assignedToReviewer && 
+        !allReviewers.some(rev => rev._id === assignment.assignedToReviewer._id)) {
+      allReviewers.push(assignment.assignedToReviewer);
+    }
+
     setEditingAssignment({
       ...assignment,
-      assignedToInitiator: assignment.assignedToInitiator?._id || '',
-      assignedToReviewer: assignment.assignedToReviewer?._id || '',
+      allInitiators,
+      allReviewers,
       deadline: new Date(assignment.deadline).toISOString().split('T')[0] // Format for date input
     });
     setShowEditModal(true);
@@ -184,10 +210,44 @@ const Roles = () => {
 
   const handleUpdateAssignment = async () => {
     try {
-      // Check if same person is assigned as both initiator and reviewer
-      if (editingAssignment.assignedToInitiator === editingAssignment.assignedToReviewer) {
-        showMessage('Initiator and reviewer cannot be the same person', 'error');
+      // Validation for multiple users
+      if (!editingAssignment.allInitiators || !editingAssignment.allReviewers ||
+          editingAssignment.allInitiators.length === 0 || editingAssignment.allReviewers.length === 0) {
+        showMessage('Assignment must have at least one initiator and one reviewer', 'error');
         return;
+      }
+
+      // Check for user overlap
+      const initiatorIds = editingAssignment.allInitiators.map(user => user._id);
+      const reviewerIds = editingAssignment.allReviewers.map(user => user._id);
+      const hasOverlap = initiatorIds.some(id => reviewerIds.includes(id));
+      
+      if (hasOverlap) {
+        showMessage('Users cannot be both initiator and reviewer for the same task', 'error');
+        return;
+      }
+
+      const updateData = {
+        deadline: editingAssignment.deadline,
+        courseCode: editingAssignment.courseCode,
+        courseName: editingAssignment.courseName
+      };
+
+      // Set assignment data based on number of users
+      if (editingAssignment.allInitiators.length === 1) {
+        updateData.assignedToInitiator = editingAssignment.allInitiators[0]._id;
+        updateData.assignedToInitiators = [editingAssignment.allInitiators[0]._id];
+      } else {
+        updateData.assignedToInitiators = editingAssignment.allInitiators.map(user => user._id);
+        updateData.assignedToInitiator = null; // Clear legacy field for multiple users
+      }
+
+      if (editingAssignment.allReviewers.length === 1) {
+        updateData.assignedToReviewer = editingAssignment.allReviewers[0]._id;
+        updateData.assignedToReviewers = [editingAssignment.allReviewers[0]._id];
+      } else {
+        updateData.assignedToReviewers = editingAssignment.allReviewers.map(user => user._id);
+        updateData.assignedToReviewer = null; // Clear legacy field for multiple users
       }
 
       const response = await fetch(`http://localhost:5000/api/tasks/${editingAssignment._id}`, {
@@ -196,13 +256,7 @@ const Roles = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getToken()}`
         },
-        body: JSON.stringify({
-          assignedToInitiator: editingAssignment.assignedToInitiator,
-          assignedToReviewer: editingAssignment.assignedToReviewer,
-          deadline: editingAssignment.deadline,
-          courseCode: editingAssignment.courseCode,
-          courseName: editingAssignment.courseName
-        })
+        body: JSON.stringify(updateData)
       });
 
       if (response.ok) {
@@ -229,26 +283,35 @@ const Roles = () => {
     
     setLoading(true);
 
-    if (!selectedInitiator || !selectedReviewer) {
-      showMessage('Please select both initiator and reviewer', 'error');
+    // Validation - Must have at least one initiator and one reviewer
+    if (!selectedInitiators.length || !selectedReviewers.length) {
+      showMessage('Please select at least one initiator and one reviewer', 'error');
       setLoading(false);
       return;
     }
 
-    if (selectedInitiator._id === selectedReviewer._id) {
-      showMessage('Initiator and reviewer cannot be the same person', 'error');
+    // Check for overlapping users
+    const initiatorIds = selectedInitiators.map(user => user._id);
+    const reviewerIds = selectedReviewers.map(user => user._id);
+    const hasOverlap = initiatorIds.some(id => reviewerIds.includes(id));
+    
+    if (hasOverlap) {
+      showMessage('Users cannot be both initiator and reviewer for the same task', 'error');
       setLoading(false);
       return;
     }
 
     // Check for duplicate assignments
-    const duplicateAssignment = assignments.find(assignment => 
-      assignment.assignedToInitiator === selectedInitiator._id &&
-      assignment.assignedToReviewer === selectedReviewer._id &&
-      assignment.assignmentType === assignmentForm.assignmentType &&
-      assignment.courseCode === selectedInitiator.courseCode &&
-      assignment.deadline === assignmentForm.deadline
-    );
+    const duplicateAssignment = assignments.find(assignment => {
+      const existingInitiators = assignment.assignedToInitiators || (assignment.assignedToInitiator ? [assignment.assignedToInitiator] : []);
+      const existingReviewers = assignment.assignedToReviewers || (assignment.assignedToReviewer ? [assignment.assignedToReviewer] : []);
+      
+      return assignment.assignmentType === assignmentForm.assignmentType &&
+             assignment.courseCode === selectedInitiators[0]?.courseCode &&
+             assignment.deadline === assignmentForm.deadline &&
+             existingInitiators.some(init => selectedInitiators.some(sel => sel._id === init._id)) &&
+             existingReviewers.some(rev => selectedReviewers.some(sel => sel._id === rev._id));
+    });
 
     if (duplicateAssignment) {
       showMessage('A similar assignment already exists for these users', 'error');
@@ -257,15 +320,57 @@ const Roles = () => {
     }
 
     try {
+      // Get course information from the first initiator
+      const firstInitiator = selectedInitiators[0];
+      let courseCode = '';
+      let courseName = '';
+      
+      if (firstInitiator) {
+        // Try to get courseCode from different possible sources
+        if (firstInitiator.courseIds && firstInitiator.courseIds.length > 0) {
+          courseCode = firstInitiator.courseIds[0];
+        } else if (firstInitiator.courseCode) {
+          courseCode = firstInitiator.courseCode;
+        }
+        
+        // Get course name from course code
+        if (courseCode) {
+          courseName = getCourseNameByCode(courseCode);
+        }
+      }
+      
+      // If no course information available, use assignment type as fallback
+      if (!courseCode) {
+        courseCode = 'GENERAL';
+        courseName = assignmentForm.assignmentType || 'General Assignment';
+      }
+      
       const assignmentData = {
-        assignedToInitiator: selectedInitiator._id,
-        assignedToReviewer: selectedReviewer._id,
-        courseCode: selectedInitiator.courseCode,
-        courseName: selectedInitiator.courseName,
         assignmentType: assignmentForm.assignmentType,
         description: assignmentForm.description,
-        deadline: assignmentForm.deadline
+        deadline: assignmentForm.deadline,
+        courseCode: courseCode,
+        courseName: courseName
       };
+
+      // Always use array format for consistency
+      if (selectedInitiators.length === 1) {
+        // Single initiator - use both formats for backward compatibility
+        assignmentData.assignedToInitiator = selectedInitiators[0]._id;
+        assignmentData.assignedToInitiators = [selectedInitiators[0]._id];
+      } else {
+        // Multiple initiators - use array format only
+        assignmentData.assignedToInitiators = selectedInitiators.map(user => user._id);
+      }
+
+      if (selectedReviewers.length === 1) {
+        // Single reviewer - use both formats for backward compatibility
+        assignmentData.assignedToReviewer = selectedReviewers[0]._id;
+        assignmentData.assignedToReviewers = [selectedReviewers[0]._id];
+      } else {
+        // Multiple reviewers - use array format only
+        assignmentData.assignedToReviewers = selectedReviewers.map(user => user._id);
+      }
 
       const response = await fetch('http://localhost:5000/api/tasks', {
         method: 'POST',
@@ -281,14 +386,12 @@ const Roles = () => {
       if (response.ok) {
         showMessage('Assignment created successfully!', 'success');
         setAssignmentForm({
-          initiatorId: '',
-          reviewerId: '',
           assignmentType: '',
           description: '',
           deadline: ''
         });
-        setSelectedInitiator(null);
-        setSelectedReviewer(null);
+        setSelectedInitiators([]);
+        setSelectedReviewers([]);
         await fetchAssignments();
         await fetchUsers();
       } else {
@@ -344,6 +447,70 @@ const Roles = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper functions for multiple user selection
+  const addInitiator = (user) => {
+    if (!selectedInitiators.find(u => u._id === user._id)) {
+      setSelectedInitiators([...selectedInitiators, user]);
+    }
+  };
+
+  const removeInitiator = (userId) => {
+    setSelectedInitiators(selectedInitiators.filter(u => u._id !== userId));
+  };
+
+  const addReviewer = (user) => {
+    if (!selectedReviewers.find(u => u._id === user._id)) {
+      setSelectedReviewers([...selectedReviewers, user]);
+    }
+  };
+
+  const removeReviewer = (userId) => {
+    setSelectedReviewers(selectedReviewers.filter(u => u._id !== userId));
+  };
+
+  const clearAllSelections = () => {
+    setSelectedInitiators([]);
+    setSelectedReviewers([]);
+    setAssignmentForm({
+      assignmentType: '',
+      description: '',
+      deadline: ''
+    });
+  };
+
+  // Helper functions for edit modal
+  const addInitiatorToEdit = (user) => {
+    if (!editingAssignment.allInitiators.find(u => u._id === user._id)) {
+      setEditingAssignment({
+        ...editingAssignment,
+        allInitiators: [...editingAssignment.allInitiators, user]
+      });
+    }
+  };
+
+  const removeInitiatorFromEdit = (userId) => {
+    setEditingAssignment({
+      ...editingAssignment,
+      allInitiators: editingAssignment.allInitiators.filter(u => u._id !== userId)
+    });
+  };
+
+  const addReviewerToEdit = (user) => {
+    if (!editingAssignment.allReviewers.find(u => u._id === user._id)) {
+      setEditingAssignment({
+        ...editingAssignment,
+        allReviewers: [...editingAssignment.allReviewers, user]
+      });
+    }
+  };
+
+  const removeReviewerFromEdit = (userId) => {
+    setEditingAssignment({
+      ...editingAssignment,
+      allReviewers: editingAssignment.allReviewers.filter(u => u._id !== userId)
+    });
   };
 
   const handleUserRoleUpdate = async (userId, field, value) => {
@@ -426,66 +593,137 @@ const Roles = () => {
 
         <form className="assignment-form" onSubmit={handleAssignmentSubmit}>
           <div className="form-row">
-            <div className="form-group">
-              <label>Select Initiator (User)</label>
+            {/* Initiators Section */}
+            <div className="form-group dynamic-user-group">
+              <label>Select Initiators 👤</label>
+              
+              {/* Add Initiator Dropdown */}
               <select
-                value={assignmentForm.initiatorId}
                 onChange={(e) => {
                   const userId = e.target.value;
-                  const selectedUser = nonAdminUsers.find(u => u._id === userId);
-                  setSelectedInitiator(selectedUser);
-                  setAssignmentForm({...assignmentForm, initiatorId: userId});
+                  if (userId) {
+                    const selectedUser = nonAdminUsers.find(u => u._id === userId);
+                    addInitiator(selectedUser);
+                    e.target.value = ''; // Reset select
+                  }
                 }}
-                required
               >
-                <option value="">Choose a user...</option>
-                {nonAdminUsers.map(user => (
-                  <option key={user._id} value={user._id}>
-                    {user.firstName} {user.lastName} ({user.email})
-                  </option>
-                ))}
+                <option value="">Add an initiator...</option>
+                {nonAdminUsers
+                  .filter(user => !selectedInitiators.find(u => u._id === user._id))
+                  .filter(user => !selectedReviewers.find(u => u._id === user._id)) // Prevent overlap
+                  .map(user => (
+                    <option key={user._id} value={user._id}>
+                      {user.firstName} {user.lastName} ({user.email})
+                    </option>
+                  ))}
               </select>
-              {selectedInitiator && (
-                <div className="user-details">
-                  <small>
-                    <strong>Subrole:</strong> {selectedInitiator.subrole || 'Not set'} | 
-                    <strong> Course:</strong> {selectedInitiator.courseCode || 'Not set'} | 
-                    <strong> ID:</strong> {selectedInitiator._id}
-                  </small>
+              
+              {/* Selected Initiators Display */}
+              {selectedInitiators.length > 0 && (
+                <div className="selected-users">
+                  <h4>Selected Initiators ({selectedInitiators.length}):</h4>
+                  {selectedInitiators.map((user, index) => (
+                    <div key={user._id} className="selected-user-item">
+                      <span>
+                        {index + 1}. {user.firstName} {user.lastName} ({user.email})
+                        <small className="user-course"> - {user.courseCode}</small>
+                      </span>
+                      <button
+                        type="button"
+                        className="remove-user-btn"
+                        onClick={() => removeInitiator(user._id)}
+                        title="Remove initiator"
+                      >
+                        ❌
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {/* Add Another Initiator Button */}
+                  {selectedInitiators.length >= 1 && (
+                    <div className="add-more-section">
+                      <small className="add-more-hint">
+                        💡 Need another initiator? Select from the dropdown above to add more team members.
+                      </small>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
             
-            <div className="form-group">
-              <label>Select Reviewer (User)</label>
+            {/* Reviewers Section */}
+            <div className="form-group dynamic-user-group">
+              <label>Select Reviewers �️</label>
+              
+              {/* Add Reviewer Dropdown */}
               <select
-                value={assignmentForm.reviewerId}
                 onChange={(e) => {
                   const userId = e.target.value;
-                  const selectedUser = nonAdminUsers.find(u => u._id === userId);
-                  setSelectedReviewer(selectedUser);
-                  setAssignmentForm({...assignmentForm, reviewerId: userId});
+                  if (userId) {
+                    const selectedUser = nonAdminUsers.find(u => u._id === userId);
+                    addReviewer(selectedUser);
+                    e.target.value = ''; // Reset select
+                  }
                 }}
-                required
               >
-                <option value="">Choose a reviewer...</option>
-                {nonAdminUsers.map(user => (
-                  <option key={user._id} value={user._id}>
-                    {user.firstName} {user.lastName} ({user.email})
-                  </option>
-                ))}
+                <option value="">Add a reviewer...</option>
+                {nonAdminUsers
+                  .filter(user => !selectedReviewers.find(u => u._id === user._id))
+                  .filter(user => !selectedInitiators.find(u => u._id === user._id)) // Prevent overlap
+                  .map(user => (
+                    <option key={user._id} value={user._id}>
+                      {user.firstName} {user.lastName} ({user.email})
+                    </option>
+                  ))}
               </select>
-              {selectedReviewer && (
-                <div className="user-details">
-                  <small>
-                    <strong>Subrole:</strong> {selectedReviewer.subrole || 'Not set'} | 
-                    <strong> Course:</strong> {selectedReviewer.courseCode || 'Not set'} | 
-                    <strong> ID:</strong> {selectedReviewer._id}
-                  </small>
+              
+              {/* Selected Reviewers Display */}
+              {selectedReviewers.length > 0 && (
+                <div className="selected-users">
+                  <h4>Selected Reviewers ({selectedReviewers.length}):</h4>
+                  {selectedReviewers.map((user, index) => (
+                    <div key={user._id} className="selected-user-item">
+                      <span>
+                        {index + 1}. {user.firstName} {user.lastName} ({user.email})
+                        <small className="user-course"> - {user.courseCode}</small>
+                      </span>
+                      <button
+                        type="button"
+                        className="remove-user-btn"
+                        onClick={() => removeReviewer(user._id)}
+                        title="Remove reviewer"
+                      >
+                        ❌
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {/* Add Another Reviewer Button */}
+                  {selectedReviewers.length >= 1 && (
+                    <div className="add-more-section">
+                      <small className="add-more-hint">
+                        💡 Need another reviewer? Select from the dropdown above to add more team members.
+                      </small>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
+          
+          {/* Clear All Button */}
+          {(selectedInitiators.length > 0 || selectedReviewers.length > 0) && (
+            <div className="clear-selections">
+              <button 
+                type="button" 
+                className="clear-btn"
+                onClick={clearAllSelections}
+              >
+                🗑️ Clear All Selections
+              </button>
+            </div>
+          )}
 
           <div className="form-row">
             <div className="form-group">
@@ -563,24 +801,66 @@ const Roles = () => {
                     </div>
                   </td>
                   <td>
-                    {assignment.assignedToInitiator ? (
-                      <div>
-                        <div>{assignment.assignedToInitiator.name}</div>
-                        <small>{assignment.assignedToInitiator.email}</small>
-                      </div>
-                    ) : (
-                      'Not assigned'
-                    )}
+                    {(() => {
+                      // Handle multiple initiators
+                      const initiators = assignment.assignedToInitiators || 
+                                        (assignment.assignedToInitiator ? [assignment.assignedToInitiator] : []);
+                      
+                      if (initiators.length === 0) {
+                        return 'Not assigned';
+                      }
+                      
+                      if (initiators.length === 1) {
+                        return (
+                          <div>
+                            <div>{initiators[0].firstName} {initiators[0].lastName}</div>
+                            <small>{initiators[0].email}</small>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div>
+                          <div><strong>{initiators.length} Initiators:</strong></div>
+                          {initiators.map((initiator, index) => (
+                            <div key={initiator._id || index} style={{ marginBottom: '4px' }}>
+                              <small>{initiator.firstName} {initiator.lastName} ({initiator.email})</small>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td>
-                    {assignment.assignedToReviewer ? (
-                      <div>
-                        <div>{assignment.assignedToReviewer.name}</div>
-                        <small>{assignment.assignedToReviewer.email}</small>
-                      </div>
-                    ) : (
-                      'Not assigned'
-                    )}
+                    {(() => {
+                      // Handle multiple reviewers
+                      const reviewers = assignment.assignedToReviewers || 
+                                       (assignment.assignedToReviewer ? [assignment.assignedToReviewer] : []);
+                      
+                      if (reviewers.length === 0) {
+                        return 'Not assigned';
+                      }
+                      
+                      if (reviewers.length === 1) {
+                        return (
+                          <div>
+                            <div>{reviewers[0].firstName} {reviewers[0].lastName}</div>
+                            <small>{reviewers[0].email}</small>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div>
+                          <div><strong>{reviewers.length} Reviewers:</strong></div>
+                          {reviewers.map((reviewer, index) => (
+                            <div key={reviewer._id || index} style={{ marginBottom: '4px' }}>
+                              <small>{reviewer.firstName} {reviewer.lastName} ({reviewer.email})</small>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td>
                     <span 

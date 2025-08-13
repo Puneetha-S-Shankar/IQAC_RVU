@@ -84,7 +84,7 @@ router.get('/my-tasks', async (req, res) => {
   }
 });
 
-// Get specific task with access control (SIMPLIFIED!)
+// Get specific task with access control (Enhanced for Multiple Users)
 router.get('/:taskId', async (req, res) => {
   try {
     const { taskId } = req.params;
@@ -92,13 +92,17 @@ router.get('/:taskId', async (req, res) => {
     const userRole = req.user.role;
     
     const task = await Task.findById(taskId)
-      .populate('assignedToInitiator assignedToReviewer assignedBy', 'firstName lastName email');
+      .populate('assignedToInitiators', 'firstName lastName email username')
+      .populate('assignedToReviewers', 'firstName lastName email username')
+      .populate('assignedToInitiator', 'firstName lastName email username')
+      .populate('assignedToReviewer', 'firstName lastName email username')
+      .populate('assignedBy', 'firstName lastName email username');
     
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
     
-    // SIMPLE ACCESS CHECK - One line!
+    // Enhanced access check supporting multiple users
     if (!task.canUserAccess(userId, userRole)) {
       return res.status(403).json({ error: 'You do not have access to this task' });
     }
@@ -132,6 +136,10 @@ router.post('/:taskId/upload', async (req, res) => {
     task.fileId = fileId;
     task.status = 'file-uploaded';
     task.submittedAt = new Date();
+    
+    // Initialize reviewer approvals when file is uploaded
+    task.initializeReviewerApprovals();
+    
     await task.save();
     
     res.json({ message: 'File uploaded successfully', task });
@@ -161,6 +169,10 @@ router.put('/:taskId/submit', async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
     
+    // Initialize reviewer approvals when file is uploaded
+    task.initializeReviewerApprovals();
+    await task.save();
+    
     // Create notification for the reviewer
     const notification = new Notification({
       userId: task.assignedToReviewer._id,
@@ -183,43 +195,278 @@ router.put('/:taskId/submit', async (req, res) => {
   }
 });
 
-// Approve a task (Admin only)
-router.put('/:taskId/approve', async (req, res) => {
+// Reviewer approve action (different from admin final approval)
+router.put('/:taskId/reviewer-approve', async (req, res) => {
   try {
     const { taskId } = req.params;
-    const { reviewedBy } = req.body;
+    const { comment } = req.body;
+    const reviewerId = req.user._id;
     
-    const task = await Task.findByIdAndUpdate(
-      taskId,
-      {
-        status: 'approved-by-reviewer',
-        reviewedBy: reviewedBy,
-        reviewedAt: new Date()
-      },
-      { new: true }
-    ).populate('assignedToInitiator', 'firstName lastName email');
+    console.log('Reviewer approve:', { taskId, reviewerId, comment });
+    
+    const task = await Task.findById(taskId)
+      .populate('assignedToInitiators', 'username email firstName lastName')
+      .populate('assignedToReviewers', 'username email firstName lastName')
+      .populate('assignedToInitiator', 'username email firstName lastName')
+      .populate('assignedToReviewer', 'username email firstName lastName');
     
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
     
-    // Create notification for the initiator
-    const notification = new Notification({
-      userId: task.assignedToInitiator._id,
-      type: 'file_approved',
-      title: 'File Approved',
-      message: `Your submission for "${task.title}" has been approved`,
-      taskId: task._id
+    // Initialize reviewer approvals if needed BEFORE checking authorization
+    task.initializeReviewerApprovals();
+    
+    // Check if user can review this task
+    if (!task.canUserPerformAction(reviewerId, 'review', req.user.role)) {
+      console.log('Authorization failed - user cannot review this task');
+      return res.status(403).json({ error: 'You are not authorized to review this task or have already reviewed it' });
+    }
+    
+    console.log('Authorization passed - proceeding with approval');
+    
+    // Record the reviewer's approval
+    console.log('Before recordReviewerDecision:', {
+      reviewerApprovals: task.reviewerApprovals,
+      status: task.status
     });
     
-    await notification.save();
+    task.recordReviewerDecision(reviewerId, 'approved', comment);
+    
+    console.log('After recordReviewerDecision:', {
+      reviewerApprovals: task.reviewerApprovals,
+      status: task.status
+    });
+    
+    // Add to review comments for backward compatibility
+    task.reviewComments.push({
+      comment: comment || 'Approved',
+      reviewedBy: reviewerId,
+      action: 'approved'
+    });
+    
+    await task.save();
+    
+    console.log('After save:', {
+      reviewerApprovals: task.reviewerApprovals,
+      status: task.status,
+      saved: true
+    });
+    
+    // Create notifications for relevant users
+    const allInitiators = task.getAllInitiators();
+    
+    // Notify all initiators about the approval
+    for (const initiatorId of allInitiators) {
+      const notification = new Notification({
+        userId: initiatorId,
+        type: 'reviewer_approved',
+        title: 'Document Approved by Reviewer',
+        message: `Your submission for "${task.title}" has been approved by a reviewer`,
+        taskId: task._id
+      });
+      await notification.save();
+    }
+    
+    // If all reviewers approved, notify admin
+    if (task.status === 'approved-by-reviewer') {
+      const adminUsers = await User.find({ role: 'admin' });
+      for (const admin of adminUsers) {
+        const notification = new Notification({
+          userId: admin._id,
+          type: 'ready_for_final_approval',
+          title: 'Document Ready for Final Approval',
+          message: `"${task.title}" has been approved by all reviewers and awaits your final approval`,
+          taskId: task._id
+        });
+        await notification.save();
+      }
+    }
+    
+    const populatedTask = await Task.findById(taskId)
+      .populate('assignedToInitiators', 'username email firstName lastName')
+      .populate('assignedToReviewers', 'username email firstName lastName')
+      .populate('assignedToInitiator', 'username email firstName lastName')
+      .populate('assignedToReviewer', 'username email firstName lastName')
+      .populate('reviewerApprovals.reviewerId', 'username email firstName lastName');
     
     res.json({ 
-      message: 'Task approved successfully',
+      message: 'Document approved successfully',
+      task: populatedTask
+    });
+  } catch (error) {
+    console.error('Reviewer approval error:', error);
+    res.status(500).json({ error: 'Failed to approve document' });
+  }
+});
+
+// Reviewer reject action
+router.put('/:taskId/reviewer-reject', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { comment } = req.body;
+    const reviewerId = req.user._id;
+    
+    console.log('Reviewer reject:', { taskId, reviewerId, comment });
+    
+    const task = await Task.findById(taskId)
+      .populate('assignedToInitiators', 'username email firstName lastName')
+      .populate('assignedToReviewers', 'username email firstName lastName')
+      .populate('assignedToInitiator', 'username email firstName lastName')
+      .populate('assignedToReviewer', 'username email firstName lastName');
+    
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    // Initialize reviewer approvals if needed BEFORE checking authorization
+    task.initializeReviewerApprovals();
+    
+    // Check if user can review this task
+    if (!task.canUserPerformAction(reviewerId, 'review', req.user.role)) {
+      return res.status(403).json({ error: 'You are not authorized to review this task or have already reviewed it' });
+    }
+    
+    // Record the reviewer's rejection
+    task.recordReviewerDecision(reviewerId, 'rejected', comment);
+    task.rejectionReason = comment;
+    
+    // Add to review comments for backward compatibility
+    task.reviewComments.push({
+      comment: comment || 'Rejected',
+      reviewedBy: reviewerId,
+      action: 'rejected'
+    });
+    
+    await task.save();
+    
+    // Create notifications for all initiators
+    const allInitiators = task.getAllInitiators();
+    
+    for (const initiatorId of allInitiators) {
+      const notification = new Notification({
+        userId: initiatorId,
+        type: 'reviewer_rejected',
+        title: 'Document Rejected by Reviewer',
+        message: `Your submission for "${task.title}" has been rejected. Reason: ${comment}`,
+        taskId: task._id
+      });
+      await notification.save();
+    }
+    
+    const populatedTask = await Task.findById(taskId)
+      .populate('assignedToInitiators', 'username email firstName lastName')
+      .populate('assignedToReviewers', 'username email firstName lastName')
+      .populate('assignedToInitiator', 'username email firstName lastName')
+      .populate('assignedToReviewer', 'username email firstName lastName')
+      .populate('reviewerApprovals.reviewerId', 'username email firstName lastName');
+    
+    res.json({ 
+      message: 'Document rejected successfully',
+      task: populatedTask
+    });
+  } catch (error) {
+    console.error('Reviewer rejection error:', error);
+    res.status(500).json({ error: 'Failed to reject document' });
+  }
+});
+
+// Approve a task (Admin only)
+router.put('/:taskId/approve', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { comment } = req.body;
+    const adminId = req.user._id;
+    
+    console.log('Admin approve request:', { taskId, adminId, comment });
+    
+    const task = await Task.findById(taskId)
+      .populate('assignedToInitiators', 'username email firstName lastName')
+      .populate('assignedToReviewers', 'username email firstName lastName')
+      .populate('assignedToInitiator', 'username email firstName lastName')
+      .populate('assignedToReviewer', 'username email firstName lastName');
+    
+    if (!task) {
+      console.log('Task not found:', taskId);
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    console.log('Task found, current status:', task.status);
+    
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      console.log('Authorization failed - user is not admin:', req.user.role);
+      return res.status(403).json({ error: 'Only admins can perform final approval' });
+    }
+    
+    // Initialize reviewer approvals if needed
+    task.initializeReviewerApprovals();
+    
+    // Check if all reviewers have approved (for multiple reviewer system)
+    if (task.assignedToReviewers && task.assignedToReviewers.length > 0) {
+      console.log('Task has multiple reviewers, checking approvals...');
+      console.log('Assigned reviewers:', task.assignedToReviewers.map(r => r._id || r));
+      console.log('Current reviewer approvals:', task.reviewerApprovals);
+      
+      const allApproved = task.allReviewersApproved();
+      console.log('All reviewers approved check result:', allApproved);
+      
+      if (!allApproved) {
+        console.log('Not all reviewers have approved yet - returning error');
+        return res.status(400).json({ error: 'All reviewers must approve before admin can give final approval' });
+      }
+      console.log('All reviewers have approved - proceeding with admin approval');
+    } else {
+      console.log('No multiple reviewers assigned, checking legacy system...');
+      if (task.assignedToReviewer) {
+        console.log('Legacy single reviewer assigned:', task.assignedToReviewer);
+        console.log('Task status:', task.status);
+        if (task.status !== 'approved-by-reviewer') {
+          console.log('Legacy reviewer has not approved yet');
+          return res.status(400).json({ error: 'Reviewer must approve before admin can give final approval' });
+        }
+      }
+    }
+    
+    // Update task status to final approval
+    task.status = 'approved-by-admin';
+    task.reviewedBy = adminId;
+    task.reviewedAt = new Date();
+    
+    // Add admin comment if provided
+    if (comment) {
+      task.reviewComments.push({
+        comment: comment,
+        reviewedBy: adminId,
+        action: 'approved'
+      });
+    }
+    
+    await task.save();
+    console.log('Task approved by admin, new status:', task.status);
+    
+    // Create notifications for all initiators
+    const allInitiators = task.getAllInitiators();
+    console.log('Notifying initiators:', allInitiators.length);
+    
+    for (const initiatorId of allInitiators) {
+      const notification = new Notification({
+        userId: initiatorId,
+        type: 'file_approved',
+        title: 'Final Approval - File Approved',
+        message: `Your submission for "${task.title}" has received final admin approval`,
+        taskId: task._id
+      });
+      
+      await notification.save();
+    }
+    
+    res.json({ 
+      message: 'Task approved by admin successfully',
       task: task
     });
   } catch (error) {
-    console.error('Task approval error:', error);
+    console.error('Admin approval error:', error);
     res.status(500).json({ error: 'Failed to approve task' });
   }
 });
@@ -307,7 +554,7 @@ router.delete('/:taskId', async (req, res) => {
   }
 });
 
-// Get all tasks (Admin can see all, users see assigned tasks)
+// Get all tasks (Admin can see all, users see assigned tasks) - Enhanced for Multiple Users
 router.get('/', async (req, res) => {
   try {
     console.log('GET /api/tasks - User:', req.user);
@@ -325,6 +572,10 @@ router.get('/', async (req, res) => {
     // Add user filter if provided (for specific user's tasks)
     if (user) {
       filter.$or = [
+        // New array-based assignments
+        { assignedToInitiators: user },
+        { assignedToReviewers: user },
+        // Legacy single assignments
         { assignedToInitiator: user },
         { assignedToReviewer: user }
       ];
@@ -336,14 +587,21 @@ router.get('/', async (req, res) => {
       console.log('GET /api/tasks - Admin user, filter:', filter);
       // Admin sees all tasks (with optional filters)
       tasks = await Task.find(filter)
-        .populate('assignedToInitiator', 'username email')
-        .populate('assignedToReviewer', 'username email')
-        .populate('assignedBy', 'username email')
+        .populate('assignedToInitiators', 'username email firstName lastName')
+        .populate('assignedToReviewers', 'username email firstName lastName')
+        .populate('assignedToInitiator', 'username email firstName lastName')
+        .populate('assignedToReviewer', 'username email firstName lastName')
+        .populate('assignedBy', 'username email firstName lastName')
+        .populate('reviewerApprovals.reviewerId', 'username email firstName lastName')
         .sort({ createdAt: -1 });
     } else {
       // Users see only their assigned tasks (with optional filters)
       const userFilter = {
         $or: [
+          // New array-based assignments
+          { assignedToInitiators: requestingUser._id },
+          { assignedToReviewers: requestingUser._id },
+          // Legacy single assignments
           { assignedToInitiator: requestingUser._id },
           { assignedToReviewer: requestingUser._id }
         ]
@@ -354,9 +612,12 @@ router.get('/', async (req, res) => {
       console.log('GET /api/tasks - Regular user, filter:', combinedFilter);
       
       tasks = await Task.find(combinedFilter)
-        .populate('assignedToInitiator', 'username email')
-        .populate('assignedToReviewer', 'username email')
-        .populate('assignedBy', 'username email')
+        .populate('assignedToInitiators', 'username email firstName lastName')
+        .populate('assignedToReviewers', 'username email firstName lastName')
+        .populate('assignedToInitiator', 'username email firstName lastName')
+        .populate('assignedToReviewer', 'username email firstName lastName')
+        .populate('assignedBy', 'username email firstName lastName')
+        .populate('reviewerApprovals.reviewerId', 'username email firstName lastName')
         .sort({ createdAt: -1 });
     }
     
@@ -369,7 +630,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Create a new task (simplified API endpoint)
+// Create a new task (enhanced for multiple users support)
 router.post('/', async (req, res) => {
   try {
     console.log('POST /api/tasks - Request body:', req.body);
@@ -382,28 +643,50 @@ router.post('/', async (req, res) => {
       courseName,
       assignedToInitiator,
       assignedToReviewer,
+      assignedToInitiators, // New field for multiple initiators
+      assignedToReviewers,  // New field for multiple reviewers
       category,
       assignmentType
     } = req.body;
     
     console.log('POST /api/tasks - Extracted data:', {
       title, description, courseCode, courseName, 
-      assignedToInitiator, assignedToReviewer, category, assignmentType
+      assignedToInitiator, assignedToReviewer,
+      assignedToInitiators, assignedToReviewers,
+      category, assignmentType
     });
     
-    // Create the task
-    const task = new Task({
+    // Create the task with both single and multiple assignment support
+    const taskData = {
       title: title || `${courseCode} ${assignmentType || 'Assignment'}`,
       description,
       courseCode,
       courseName,
-      assignedToInitiator,
-      assignedToReviewer,
       assignedBy: req.user._id,
-      category: assignmentType || category || 'course-material', // Map assignmentType to category
+      category: assignmentType || category || 'course-material',
       deadline: new Date(req.body.deadline),
       status: 'assigned'
-    });
+    };
+
+    // Handle multiple initiators (new feature)
+    if (assignedToInitiators && Array.isArray(assignedToInitiators) && assignedToInitiators.length > 0) {
+      taskData.assignedToInitiators = assignedToInitiators;
+    } else if (assignedToInitiator) {
+      // Backward compatibility: single initiator
+      taskData.assignedToInitiator = assignedToInitiator;
+      taskData.assignedToInitiators = [assignedToInitiator];
+    }
+
+    // Handle multiple reviewers (new feature)
+    if (assignedToReviewers && Array.isArray(assignedToReviewers) && assignedToReviewers.length > 0) {
+      taskData.assignedToReviewers = assignedToReviewers;
+    } else if (assignedToReviewer) {
+      // Backward compatibility: single reviewer
+      taskData.assignedToReviewer = assignedToReviewer;
+      taskData.assignedToReviewers = [assignedToReviewer];
+    }
+    
+    const task = new Task(taskData);
     
     console.log('POST /api/tasks - Task to save:', task);
     
@@ -411,33 +694,42 @@ router.post('/', async (req, res) => {
     
     console.log('POST /api/tasks - Task saved successfully');
     
-    // Create notifications for assigned users
-    if (assignedToInitiator) {
-      const initiatorNotification = new Notification({
-        userId: assignedToInitiator,
-        type: 'task_assigned',
-        title: 'New Task Assigned',
-        message: `You have been assigned as initiator for: ${task.title}`,
-        taskId: task._id
-      });
-      await initiatorNotification.save();
+    // Create notifications for all assigned users
+    const allAssignedUsers = [];
+    
+    // Collect all initiators
+    if (task.assignedToInitiators && task.assignedToInitiators.length > 0) {
+      allAssignedUsers.push(...task.assignedToInitiators.map(id => ({ id, role: 'initiator' })));
     }
     
-    if (assignedToReviewer && assignedToReviewer !== assignedToInitiator) {
-      const reviewerNotification = new Notification({
-        userId: assignedToReviewer,
+    // Collect all reviewers
+    if (task.assignedToReviewers && task.assignedToReviewers.length > 0) {
+      allAssignedUsers.push(...task.assignedToReviewers.map(id => ({ id, role: 'reviewer' })));
+    }
+    
+    // Remove duplicates (in case someone is both initiator and reviewer)
+    const uniqueUsers = allAssignedUsers.filter((user, index, self) => 
+      index === self.findIndex(u => u.id.toString() === user.id.toString())
+    );
+    
+    // Create notifications for all assigned users
+    for (const user of uniqueUsers) {
+      const notification = new Notification({
+        userId: user.id,
         type: 'task_assigned',
-        title: 'New Review Task Assigned',
-        message: `You have been assigned as reviewer for: ${task.title}`,
+        title: 'New Task Assigned',
+        message: `You have been assigned as ${user.role} for: ${task.title}`,
         taskId: task._id
       });
-      await reviewerNotification.save();
+      await notification.save();
     }
     
     const populatedTask = await Task.findById(task._id)
-      .populate('assignedToInitiator', 'username email')
-      .populate('assignedToReviewer', 'username email')
-      .populate('assignedBy', 'username email');
+      .populate('assignedToInitiators', 'username email firstName lastName')
+      .populate('assignedToReviewers', 'username email firstName lastName')
+      .populate('assignedToInitiator', 'username email firstName lastName')
+      .populate('assignedToReviewer', 'username email firstName lastName')
+      .populate('assignedBy', 'username email firstName lastName');
     
     res.status(201).json({ 
       message: 'Task created successfully',
@@ -450,20 +742,37 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update a task
+// Update a task (Enhanced for Multiple Users)
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+    
+    // Handle multiple user assignments in updates
+    if (updateData.assignedToInitiators && Array.isArray(updateData.assignedToInitiators)) {
+      // Ensure backward compatibility
+      if (updateData.assignedToInitiators.length > 0) {
+        updateData.assignedToInitiator = updateData.assignedToInitiators[0];
+      }
+    }
+    
+    if (updateData.assignedToReviewers && Array.isArray(updateData.assignedToReviewers)) {
+      // Ensure backward compatibility
+      if (updateData.assignedToReviewers.length > 0) {
+        updateData.assignedToReviewer = updateData.assignedToReviewers[0];
+      }
+    }
     
     const task = await Task.findByIdAndUpdate(
       id,
       updateData,
       { new: true, runValidators: true }
     )
-      .populate('assignedToInitiator', 'username email')
-      .populate('assignedToReviewer', 'username email')
-      .populate('assignedBy', 'username email');
+      .populate('assignedToInitiators', 'username email firstName lastName')
+      .populate('assignedToReviewers', 'username email firstName lastName')
+      .populate('assignedToInitiator', 'username email firstName lastName')
+      .populate('assignedToReviewer', 'username email firstName lastName')
+      .populate('assignedBy', 'username email firstName lastName');
     
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
@@ -476,6 +785,75 @@ router.put('/:id', async (req, res) => {
   } catch (error) {
     console.error('Task update error:', error);
     res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
+// Add/Remove users to/from task assignments (New Multiple User Management)
+router.put('/:taskId/assignments', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { action, userIds, role } = req.body; // action: 'add' | 'remove', role: 'initiator' | 'reviewer'
+    
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only admin can modify task assignments' });
+    }
+    
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ error: 'userIds must be a non-empty array' });
+    }
+    
+    // Perform the assignment operation
+    for (const userId of userIds) {
+      if (action === 'add') {
+        if (role === 'initiator') {
+          task.addInitiator(userId);
+        } else if (role === 'reviewer') {
+          task.addReviewer(userId);
+        }
+      } else if (action === 'remove') {
+        if (role === 'initiator') {
+          task.removeInitiator(userId);
+        } else if (role === 'reviewer') {
+          task.removeReviewer(userId);
+        }
+      }
+    }
+    
+    await task.save();
+    
+    // Create notifications for newly assigned users
+    if (action === 'add') {
+      for (const userId of userIds) {
+        const notification = new Notification({
+          userId: userId,
+          type: 'task_assigned',
+          title: `Added to Task as ${role}`,
+          message: `You have been added as ${role} for: ${task.title}`,
+          taskId: task._id
+        });
+        await notification.save();
+      }
+    }
+    
+    const updatedTask = await Task.findById(taskId)
+      .populate('assignedToInitiators', 'username email firstName lastName')
+      .populate('assignedToReviewers', 'username email firstName lastName')
+      .populate('assignedToInitiator', 'username email firstName lastName')
+      .populate('assignedToReviewer', 'username email firstName lastName')
+      .populate('assignedBy', 'username email firstName lastName');
+    
+    res.json({
+      message: `Users ${action}ed successfully`,
+      task: updatedTask
+    });
+  } catch (error) {
+    console.error('Assignment modification error:', error);
+    res.status(500).json({ error: 'Failed to modify assignments' });
   }
 });
 

@@ -11,7 +11,8 @@ const notificationSchema = new mongoose.Schema({
       'file_rejected', 
       'reviewer_approved',
       'assignment_changed',
-      'assignment_assigned'
+      'assignment_assigned',
+      'ready_for_final_approval'
     ], 
     required: true 
   },

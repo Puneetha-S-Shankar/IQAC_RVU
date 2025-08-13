@@ -10,6 +10,7 @@ import {
   FaSignInAlt,
   FaSignOutAlt,
   FaUsersCog,
+  FaUser,
 } from "react-icons/fa";
 
 const Navbar = () => {
@@ -17,34 +18,54 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState('viewer');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   // Get user role from AuthContext or localStorage
   useEffect(() => {
-    let currentUser = null;
+    let userData = null;
     let token = null;
     
     // First check AuthContext
     if (user) {
-      currentUser = user;
+      userData = user;
       token = 'logged-in';
     } else {
       // Fallback to localStorage
       try {
-        currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+        userData = JSON.parse(localStorage.getItem('user') || 'null');
         token = localStorage.getItem('token');
       } catch (error) {
         console.error('Error parsing user data:', error);
       }
     }
     
-    if (currentUser && currentUser._id && token) {
-      setUserRole(currentUser.role || 'viewer');
+    if (userData && userData._id && token) {
+      setUserRole(userData.role || 'viewer');
       setIsAuthenticated(true);
+      setCurrentUser(userData);
     } else {
       setUserRole('viewer');
       setIsAuthenticated(false);
+      setCurrentUser(null);
     }
   }, [user]);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showProfile && !event.target.closest('.profile-dropdown') && !event.target.closest('[data-profile-trigger]')) {
+        setShowProfile(false);
+      }
+    };
+
+    if (showProfile) {
+      document.addEventListener('click', handleClickOutside);
+      return () => {
+        document.removeEventListener('click', handleClickOutside);
+      };
+    }
+  }, [showProfile]);
 
   // Function to check if user can access restricted content
   const canAccessRestrictedContent = () => {
@@ -142,13 +163,23 @@ const Navbar = () => {
             <FaSignInAlt /> Login
           </Link>
         ) : (
-          <span
-            onClick={handleLogout}
-            style={{ ...linkStyle, cursor: "pointer" }}
-            className="nav-hover"
-          >
-            <FaSignOutAlt /> Logout
-          </span>
+          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+            <span
+              onClick={() => setShowProfile(!showProfile)}
+              style={{ ...linkStyle, cursor: "pointer", position: 'relative' }}
+              className="nav-hover"
+              data-profile-trigger="true"
+            >
+              <FaUser /> Profile
+            </span>
+            <span
+              onClick={handleLogout}
+              style={{ ...linkStyle, cursor: "pointer" }}
+              className="nav-hover"
+            >
+              <FaSignOutAlt /> Logout
+            </span>
+          </div>
         )}
       </div>
 
@@ -159,8 +190,39 @@ const Navbar = () => {
             text-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
             transform: scale(1.05);
           }
+          .profile-dropdown {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            background: white;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            min-width: 200px;
+            color: #333;
+          }
+          .profile-dropdown h4 {
+            margin: 0 0 10px 0;
+            color: #8B4513;
+          }
+          .profile-dropdown p {
+            margin: 5px 0;
+            color: #555;
+          }
         `}
       </style>
+
+      {/* Profile Dropdown */}
+      {showProfile && currentUser && (
+        <div className="profile-dropdown">
+          <h4>Profile Information</h4>
+          <p><strong>You are logged in as:</strong> {currentUser.username}</p>
+          <p><strong>Role:</strong> {currentUser.role}</p>
+          {currentUser.email && <p><strong>Email:</strong> {currentUser.email}</p>}
+        </div>
+      )}
     </nav>
   );
 };

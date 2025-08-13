@@ -2,12 +2,23 @@ const express = require('express');
 const multer = require('multer');
 const { ObjectId } = require('mongodb');
 const mongoose = require('mongoose'); // Import Mongoose
+const { authenticateToken } = require('./auth');
 const router = express.Router();
+
+// Apply authentication to all routes except preview
+router.use((req, res, next) => {
+  // Skip authentication for preview endpoint with token
+  if (req.path.includes('/download') && req.query.token) {
+    return next();
+  }
+  // Apply authentication for all other routes
+  authenticateToken(req, res, next);
+});
 
 // Use multer memory storage
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       'application/pdf',
@@ -70,7 +81,8 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       bucketName: 'master-files'
     });
 
-    const { docNumber, category, assignmentId, uploaderEmail } = req.body;
+    const { docNumber, category, assignmentId } = req.body;
+    const uploaderEmail = req.user.email; // Get from authenticated user
     
     // Handle assignment-based uploads for teaching-and-learning
     if (category === 'teaching-and-learning' && assignmentId) {
@@ -78,13 +90,30 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       const Task = require('../models/Task');
       
       // Check if assignment exists and user is authorized
-      const assignment = await Task.findById(assignmentId).populate('assignedToInitiator');
+      const assignment = await Task.findById(assignmentId)
+        .populate('assignedToInitiator')
+        .populate('assignedToInitiators');
       
       if (!assignment) {
         return res.status(404).json({ error: 'Assignment not found' });
       }
       
-      if (!assignment.assignedToInitiator || assignment.assignedToInitiator.email !== uploaderEmail) {
+      // Check authorization for both single and multiple initiators
+      let isAuthorized = false;
+      
+      // Check new multiple initiators array
+      if (assignment.assignedToInitiators && assignment.assignedToInitiators.length > 0) {
+        isAuthorized = assignment.assignedToInitiators.some(initiator => 
+          initiator.email === uploaderEmail
+        );
+      }
+      
+      // Fallback to legacy single initiator
+      if (!isAuthorized && assignment.assignedToInitiator) {
+        isAuthorized = assignment.assignedToInitiator.email === uploaderEmail;
+      }
+      
+      if (!isAuthorized) {
         return res.status(403).json({ error: 'Not authorized to upload for this assignment' });
       }
       
@@ -270,9 +299,54 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Download assignment file from uploads bucket
+// Download assignment file from uploads bucket (with token query parameter for iframe access)
 router.get('/:id/download', async (req, res) => {
   try {
+    // Check for authentication - either header or query parameter
+    let isAuthenticated = false;
+    let currentUser = null;
+    
+    console.log('Download request for file:', req.params.id);
+    console.log('Auth header present:', !!req.headers.authorization);
+    console.log('Query token present:', !!req.query.token);
+    
+    // First try header authentication (for API calls)
+    if (req.user) {
+      console.log('Using header authentication for user:', req.user.email);
+      isAuthenticated = true;
+      currentUser = req.user;
+    } 
+    // Then try query parameter authentication (for iframe/preview access)
+    else if (req.query.token) {
+      console.log('Attempting query token authentication');
+      const jwt = require('jsonwebtoken');
+      const User = require('../models/User');
+      
+      try {
+        console.log('Verifying JWT token...');
+        const decoded = jwt.verify(req.query.token, process.env.JWT_SECRET || 'your-secret-key');
+        console.log('Token decoded successfully, userId:', decoded.userId);
+        
+        const user = await User.findById(decoded.userId);
+        if (user) {
+          console.log('User found for token:', user.email);
+          currentUser = user;
+          isAuthenticated = true;
+        } else {
+          console.log('User not found in database for ID:', decoded.userId);
+        }
+      } catch (tokenError) {
+        console.log('Token validation error:', tokenError.message);
+      }
+    }
+    
+    if (!isAuthenticated) {
+      console.log('Authentication failed - returning 401');
+      return res.status(401).json({ error: 'Access token required' });
+    }
+
+    console.log('Authentication successful for user:', currentUser.email);
+
     const db = mongoose.connection.db;
     const fileId = req.params.id;
     
@@ -280,10 +354,12 @@ router.get('/:id/download', async (req, res) => {
     let file = await db.collection('master-files.files').findOne({ _id: new ObjectId(fileId) });
     let bucketName = 'master-files';
     
-    // No fallback needed - everything is in master-files now
     if (!file) {
+      console.log('File not found:', fileId);
       return res.status(404).json({ error: 'File not found' });
     }
+    
+    console.log('File found, serving:', file.filename);
     
     const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
       bucketName: bucketName
@@ -291,14 +367,21 @@ router.get('/:id/download', async (req, res) => {
     
     res.set('Content-Type', file.contentType || file.metadata?.contentType || 'application/pdf');
     res.set('Content-Disposition', `inline; filename="${file.filename}"`);
+    
     const downloadStream = bucket.openDownloadStream(file._id);
     downloadStream.pipe(res);
+    
     downloadStream.on('error', (err) => {
       console.error('GridFS download error:', err);
       if (!res.headersSent) {
         res.status(500).json({ error: 'Server error during file download' });
       }
     });
+    
+    downloadStream.on('end', () => {
+      console.log('File download completed for:', file.filename);
+    });
+    
   } catch (error) {
     console.error('Download file error:', error);
     if (!res.headersSent) {

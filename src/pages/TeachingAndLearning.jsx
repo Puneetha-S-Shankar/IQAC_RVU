@@ -173,10 +173,12 @@ const TeachingAndLearning = () => {
       formData.append('file', file);
       formData.append('category', 'teaching-and-learning');
       formData.append('assignmentId', assignmentId);
-      formData.append('uploaderEmail', currentUser.email);
 
       const response = await fetch(`${API_BASE}/api/files/upload`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getToken()}`
+        },
         body: formData,
       });
 
@@ -202,8 +204,20 @@ const TeachingAndLearning = () => {
   const canUploadFile = (assignment) => {
     if (!currentUser || !assignment) return false;
     
-    // Check if user is the initiator
-    const isInitiator = assignment.assignedToInitiator?.email === currentUser.email;
+    // Check if user is an initiator (handle both single and multiple)
+    let isInitiator = false;
+    
+    // Check new multiple initiators array
+    if (assignment.assignedToInitiators && assignment.assignedToInitiators.length > 0) {
+      isInitiator = assignment.assignedToInitiators.some(initiator => 
+        initiator.email === currentUser.email || initiator._id === currentUser._id
+      );
+    }
+    
+    // Fallback to legacy single initiator
+    if (!isInitiator && assignment.assignedToInitiator) {
+      isInitiator = assignment.assignedToInitiator.email === currentUser.email;
+    }
     
     // Check if assignment is in correct status
     const canUpload = assignment.status === 'assigned';
@@ -217,16 +231,56 @@ const TeachingAndLearning = () => {
   const canReview = (assignment) => {
     if (!currentUser || !assignment) return false;
     
-    // Check if user is the reviewer
-    const isReviewer = assignment.assignedToReviewer?.email === currentUser.email;
+    // Check if user is a reviewer (handle both single and multiple)
+    let isReviewer = false;
+    
+    // Check new multiple reviewers array
+    if (assignment.assignedToReviewers && assignment.assignedToReviewers.length > 0) {
+      isReviewer = assignment.assignedToReviewers.some(reviewer => 
+        reviewer.email === currentUser.email || reviewer._id === currentUser._id
+      );
+    }
+    
+    // Fallback to legacy single reviewer
+    if (!isReviewer && assignment.assignedToReviewer) {
+      isReviewer = assignment.assignedToReviewer.email === currentUser.email || 
+                   assignment.assignedToReviewer._id === currentUser._id;
+    }
+    
+    // Check if this reviewer has already reviewed
+    let hasAlreadyReviewed = false;
+    if (assignment.reviewerApprovals && assignment.reviewerApprovals.length > 0) {
+      hasAlreadyReviewed = assignment.reviewerApprovals.some(approval => 
+        (approval.reviewerId._id === currentUser._id || approval.reviewerId.email === currentUser.email) &&
+        (approval.status === 'approved' || approval.status === 'rejected')
+      );
+    }
     
     // Check if assignment has file uploaded and ready for review
-    const hasFileForReview = assignment.status === 'file-uploaded';
+    const hasFileForReview = assignment.fileId && (
+      assignment.status === 'file-uploaded' || 
+      assignment.status === 'in-review' || 
+      assignment.status === 'partially-approved'
+    );
     
     // Check if deadline hasn't passed
     const notOverdue = !isOverdue(assignment.deadline);
     
-    return isReviewer && hasFileForReview && notOverdue;
+    console.log('canReview check for assignment:', assignment.title, assignment.courseCode, {
+      isReviewer,
+      hasAlreadyReviewed,
+      hasFileForReview,
+      notOverdue,
+      status: assignment.status,
+      fileId: assignment.fileId,
+      currentUser: currentUser.email,
+      reviewerApprovals: assignment.reviewerApprovals
+    });
+    
+    const result = isReviewer && hasFileForReview && notOverdue && !hasAlreadyReviewed;
+    console.log('canReview result:', result);
+    
+    return result;
   };
 
   const canAdminApprove = (assignment) => {
@@ -235,16 +289,124 @@ const TeachingAndLearning = () => {
     // Check if user is admin
     const isAdmin = currentUser.role === 'admin';
     
-    // Check if assignment is approved by reviewer
-    const reviewerApproved = assignment.status === 'approved-by-reviewer';
+    // Don't show approve button if already approved by admin
+    if (assignment.status === 'approved-by-admin') {
+      return false;
+    }
     
-    return isAdmin && reviewerApproved;
+    // Check if assignment has been reviewed (can be partially or fully approved)
+    const hasApprovedReviews = assignment.reviewerApprovals && 
+                              assignment.reviewerApprovals.some(approval => approval.status === 'approved');
+    
+    const hasReviews = assignment.status === 'approved-by-reviewer' || 
+                      assignment.status === 'partially-approved' ||
+                      hasApprovedReviews;
+    
+    // Check if there's a file to approve (optional - allow approval even without files if reviewers approved)
+    const hasFile = assignment.fileUrl || assignment.fileName;
+    
+    console.log('canAdminApprove check:', {
+      assignmentId: assignment._id,
+      title: assignment.title,
+      isAdmin,
+      userRole: currentUser?.role,
+      status: assignment.status,
+      hasReviews,
+      hasApprovedReviews,
+      hasFile,
+      reviewerApprovals: assignment.reviewerApprovals,
+      reviewerApprovalsStatuses: assignment.reviewerApprovals?.map(a => a.status),
+      fileUrl: assignment.fileUrl,
+      fileName: assignment.fileName,
+      result: isAdmin && hasReviews && assignment.status !== 'approved-by-admin'  // Updated result calculation
+    });
+    
+    // Admin can approve if reviews are complete and not already approved by admin
+    return isAdmin && hasReviews;
+  };
+
+  // Check if current user has uploaded a document for this assignment
+  const hasUserUploaded = (assignment) => {
+    if (!currentUser || !assignment) return false;
+    
+    // Check if user is an initiator
+    let isInitiator = false;
+    
+    if (assignment.assignedToInitiators && assignment.assignedToInitiators.length > 0) {
+      isInitiator = assignment.assignedToInitiators.some(initiator => 
+        initiator.email === currentUser.email || initiator._id === currentUser._id
+      );
+    }
+    
+    if (!isInitiator && assignment.assignedToInitiator) {
+      isInitiator = assignment.assignedToInitiator.email === currentUser.email || 
+                   assignment.assignedToInitiator._id === currentUser._id;
+    }
+    
+    return isInitiator && (assignment.status === 'file-uploaded' || 
+                          assignment.status === 'in-review' || 
+                          assignment.status === 'partially-approved' ||
+                          assignment.status === 'approved-by-reviewer' ||
+                          assignment.status === 'approved-by-admin' ||
+                          assignment.status === 'completed');
+  };
+
+  // Check if current user has reviewed this assignment
+  const hasUserReviewed = (assignment) => {
+    if (!currentUser || !assignment || !assignment.reviewerApprovals) return false;
+    
+    return assignment.reviewerApprovals.some(approval => 
+      (approval.reviewerId._id === currentUser._id || approval.reviewerId.email === currentUser.email) &&
+      (approval.status === 'approved' || approval.status === 'rejected')
+    );
+  };
+
+  // Get current user's review status
+  const getUserReviewStatus = (assignment) => {
+    if (!currentUser || !assignment || !assignment.reviewerApprovals) return null;
+    
+    const userApproval = assignment.reviewerApprovals.find(approval => 
+      approval.reviewerId._id === currentUser._id || approval.reviewerId.email === currentUser.email
+    );
+    
+    return userApproval ? userApproval.status : null;
+  };
+
+  // Get review status summary
+  const getReviewStatusSummary = (assignment) => {
+    if (!assignment.reviewerApprovals || assignment.reviewerApprovals.length === 0) {
+      return 'No reviews yet';
+    }
+    
+    // Calculate total reviewers correctly
+    let totalReviewers = 0;
+    if (assignment.assignedToReviewers && assignment.assignedToReviewers.length > 0) {
+      totalReviewers += assignment.assignedToReviewers.length;
+    }
+    if (assignment.assignedToReviewer && !assignment.assignedToReviewers?.some(r => r._id === assignment.assignedToReviewer._id)) {
+      totalReviewers += 1;
+    }
+    
+    const approvedCount = assignment.reviewerApprovals.filter(approval => approval.status === 'approved').length;
+    const rejectedCount = assignment.reviewerApprovals.filter(approval => approval.status === 'rejected').length;
+    
+    if (rejectedCount > 0) {
+      return `Rejected by ${rejectedCount} reviewer(s)`;
+    } else if (approvedCount === totalReviewers && totalReviewers > 0) {
+      return `Approved by all ${totalReviewers} reviewer(s)`;
+    } else if (approvedCount > 0) {
+      return `Approved by ${approvedCount}/${totalReviewers} reviewer(s)`;
+    } else {
+      return `Pending review from ${totalReviewers} reviewer(s)`;
+    }
   };
 
   const getStatusDisplay = (status) => {
     const statusMap = {
       'assigned': 'Awaiting Upload',
       'file-uploaded': 'Under Review',
+      'in-review': 'Under Review',
+      'partially-approved': 'Partially Approved',
       'approved-by-reviewer': 'Awaiting Admin Approval',
       'approved-by-admin': 'Completed',
       'rejected': 'Rejected - Needs Resubmission',
@@ -256,7 +418,9 @@ const TeachingAndLearning = () => {
   const getStatusColor = (status) => {
     const colorMap = {
       'assigned': '#6c757d',           // Gray - waiting
-      'file-uploaded': '#007bff',      // Blue - in progress  
+      'file-uploaded': '#007bff',      // Blue - in progress
+      'in-review': '#007bff',          // Blue - in progress  
+      'partially-approved': '#ffc107', // Yellow - partially approved
       'approved-by-reviewer': '#ffc107', // Yellow - pending admin
       'approved-by-admin': '#28a745',  // Green - approved
       'rejected': '#dc3545',           // Red - rejected
@@ -287,42 +451,53 @@ const TeachingAndLearning = () => {
   };
 
   const handleReview = async (assignmentId, action, comment = '') => {
+    console.log('Handle review called:', { assignmentId, action, comment });
     try {
-      const response = await fetch(`http://localhost:5000/api/tasks/${assignmentId}/${action}`, {
+      // Use new reviewer routes instead of old ones
+      const endpoint = action === 'approve' 
+        ? `http://localhost:5000/api/tasks/${assignmentId}/reviewer-approve`
+        : `http://localhost:5000/api/tasks/${assignmentId}/reviewer-reject`;
+      
+      console.log('API endpoint:', endpoint);
+      
+      const response = await fetch(endpoint, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getToken()}`
         },
         body: JSON.stringify({
-          action,
           comment
         })
       });
 
+      console.log('API response status:', response.status);
       const data = await response.json();
+      console.log('API response data:', data);
 
       if (response.ok) {
-        showMessage(`Assignment ${action}d successfully!`, 'success');
+        showMessage(`Document ${action}d successfully!`, 'success');
         await fetchUserAssignments(); // Refresh assignments
         setShowCommentModal(false);
         setReviewComment('');
       } else {
-        showMessage(data.error || `Failed to ${action} assignment`, 'error');
+        showMessage(data.error || `Failed to ${action} document`, 'error');
       }
     } catch (error) {
-      console.error(`Error ${action}ing assignment:`, error);
-      showMessage(`Error ${action}ing assignment`, 'error');
+      console.error(`Error ${action}ing document:`, error);
+      showMessage(`Error ${action}ing document`, 'error');
     }
   };
 
   const openCommentModal = (assignmentId, action) => {
+    console.log('Opening comment modal:', { assignmentId, action });
     setCommentModalData({ assignmentId, action });
     setReviewComment('');
     setShowCommentModal(true);
   };
 
   const handleCommentSubmit = () => {
+    console.log('Handle comment submit:', { commentModalData, reviewComment });
     if (commentModalData.action === 'reject' && !reviewComment.trim()) {
       alert('Please provide a reason for rejection');
       return;
@@ -332,7 +507,11 @@ const TeachingAndLearning = () => {
 
   const handlePreviewDocument = (assignment) => {
     if (assignment.fileId) {
-      setPreviewFileUrl(`http://localhost:5000/api/files/${assignment.fileId}/download`);
+      const token = getToken();
+      console.log('Preview token:', token ? 'Token exists' : 'No token');
+      const previewUrl = `http://localhost:5000/api/files/${assignment.fileId}/download?token=${token}`;
+      console.log('Preview URL:', previewUrl);
+      setPreviewFileUrl(previewUrl);
       setShowPreviewModal(true);
     }
   };
@@ -363,7 +542,12 @@ const TeachingAndLearning = () => {
   };
 
   const handleAdminApproval = async (assignmentId) => {
-    await handleAdminApprove(assignmentId, '');
+    console.log('Admin approval clicked for assignment:', assignmentId);
+    try {
+      await handleAdminApprove(assignmentId, '');
+    } catch (error) {
+      console.error('Error in handleAdminApproval:', error);
+    }
   };
 
   // PDF Merge functionality
@@ -383,8 +567,9 @@ const TeachingAndLearning = () => {
       }
 
       // Prepare PDF URLs with titles
+      const token = getToken();
       const pdfUrls = documentsToMerge.map(doc => ({
-        url: `http://localhost:5000/api/files/${doc.fileId}/download`,
+        url: `http://localhost:5000/api/files/${doc.fileId}/download?token=${token}`,
         title: `${doc.courseCode} - ${doc.courseName}`,
         courseCode: doc.courseCode
       }));
@@ -511,10 +696,40 @@ const TeachingAndLearning = () => {
                     
                     <div className="assignment-roles">
                       <div className="role-info">
-                        <strong>Initiator:</strong> {assignment.assignedToInitiator?.name} ({assignment.assignedToInitiator?.email})
+                        <strong>Initiator:</strong> {(() => {
+                          // Handle both single and multiple initiators
+                          const initiators = assignment.assignedToInitiators || 
+                                            (assignment.assignedToInitiator ? [assignment.assignedToInitiator] : []);
+                          
+                          if (initiators.length === 0) {
+                            return 'Not assigned';
+                          }
+                          
+                          if (initiators.length === 1) {
+                            const initiator = initiators[0];
+                            return `${initiator.firstName || initiator.name || ''} ${initiator.lastName || ''} (${initiator.email})`.trim();
+                          }
+                          
+                          return `${initiators.length} initiators assigned`;
+                        })()}
                       </div>
                       <div className="role-info">
-                        <strong>Reviewer:</strong> {assignment.assignedToReviewer?.name} ({assignment.assignedToReviewer?.email})
+                        <strong>Reviewer:</strong> {(() => {
+                          // Handle both single and multiple reviewers
+                          const reviewers = assignment.assignedToReviewers || 
+                                           (assignment.assignedToReviewer ? [assignment.assignedToReviewer] : []);
+                          
+                          if (reviewers.length === 0) {
+                            return 'Not assigned';
+                          }
+                          
+                          if (reviewers.length === 1) {
+                            const reviewer = reviewers[0];
+                            return `${reviewer.firstName || reviewer.name || ''} ${reviewer.lastName || ''} (${reviewer.email})`.trim();
+                          }
+                          
+                          return `${reviewers.length} reviewers assigned`;
+                        })()}
                       </div>
                     </div>
                     
@@ -526,7 +741,42 @@ const TeachingAndLearning = () => {
                       {isOverdue(assignment.deadline) && <span className="overdue"> (OVERDUE)</span>}
                       {isDeadlineNear(assignment.deadline) && !isOverdue(assignment.deadline) && <span className="due-soon"> (DUE SOON)</span>}
                     </div>
+
+                    {/* User Action Status Indicators */}
+                    <div className="user-status-indicators">
+                      {hasUserUploaded(assignment) && (
+                        <div className="status-indicator uploaded">
+                          ✅ You have uploaded a document
+                        </div>
+                      )}
+                      
+                      {hasUserReviewed(assignment) && (
+                        <div className={`status-indicator reviewed ${getUserReviewStatus(assignment)}`}>
+                          {getUserReviewStatus(assignment) === 'approved' ? '✅' : '❌'} 
+                          You have {getUserReviewStatus(assignment)} this document
+                        </div>
+                      )}
+                      
+                      {assignment.reviewerApprovals && assignment.reviewerApprovals.length > 0 && (
+                        <div className="review-status-summary">
+                          <strong>Review Status:</strong> {getReviewStatusSummary(assignment)}
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Preview Section - Show if file exists */}
+                  {assignment.fileId && (
+                    <div className="preview-section">
+                      <h4>📄 Document Available</h4>
+                      <button 
+                        className="preview-btn"
+                        onClick={() => handlePreviewDocument(assignment)}
+                      >
+                        📄 View Document
+                      </button>
+                    </div>
+                  )}
 
                   {/* File Upload Section - Only for initiators */}
                   {canUploadFile(assignment) && (
@@ -610,19 +860,39 @@ const TeachingAndLearning = () => {
                   <div className="assignment-info">
                     {assignment.status === 'assigned' && !canUploadFile(assignment) && (
                       <div className="status-message">
-                        {assignment.assignedToInitiator?.email === currentUser?.email 
-                          ? 'Awaiting your file upload'
-                          : 'Awaiting initiator file upload'
-                        }
+                        {(() => {
+                          // Check if current user is an initiator
+                          let isCurrentUserInitiator = false;
+                          
+                          if (assignment.assignedToInitiators && assignment.assignedToInitiators.length > 0) {
+                            isCurrentUserInitiator = assignment.assignedToInitiators.some(initiator => 
+                              initiator.email === currentUser?.email || initiator._id === currentUser?._id
+                            );
+                          } else if (assignment.assignedToInitiator) {
+                            isCurrentUserInitiator = assignment.assignedToInitiator.email === currentUser?.email;
+                          }
+                          
+                          return isCurrentUserInitiator ? 'Awaiting your file upload' : 'Awaiting initiator file upload';
+                        })()}
                       </div>
                     )}
                     
                     {assignment.status === 'file-uploaded' && !canReview(assignment) && (
                       <div className="status-message">
-                        {assignment.assignedToReviewer?.email === currentUser?.email 
-                          ? 'Ready for your review'
-                          : 'Document under review'
-                        }
+                        {(() => {
+                          // Check if current user is a reviewer
+                          let isCurrentUserReviewer = false;
+                          
+                          if (assignment.assignedToReviewers && assignment.assignedToReviewers.length > 0) {
+                            isCurrentUserReviewer = assignment.assignedToReviewers.some(reviewer => 
+                              reviewer.email === currentUser?.email || reviewer._id === currentUser?._id
+                            );
+                          } else if (assignment.assignedToReviewer) {
+                            isCurrentUserReviewer = assignment.assignedToReviewer.email === currentUser?.email;
+                          }
+                          
+                          return isCurrentUserReviewer ? 'Ready for your review' : 'Document under review';
+                        })()}
                         {assignment.fileId && (
                           <button 
                             className="preview-btn small"
@@ -718,10 +988,28 @@ const TeachingAndLearning = () => {
                       
                       <div className="document-roles">
                         <div className="role-info">
-                          <strong>Submitted by:</strong> {doc.assignedToInitiator?.name || doc.assignedToInitiator?.email || 'Unknown'}
+                          <strong>Submitted by:</strong> {(() => {
+                            const initiators = doc.assignedToInitiators || 
+                                              (doc.assignedToInitiator ? [doc.assignedToInitiator] : []);
+                            if (initiators.length === 0) return 'Unknown';
+                            if (initiators.length === 1) {
+                              const initiator = initiators[0];
+                              return `${initiator.firstName || initiator.name || ''} ${initiator.lastName || ''}`.trim() || initiator.email || 'Unknown';
+                            }
+                            return `${initiators.length} initiators`;
+                          })()}
                         </div>
                         <div className="role-info">
-                          <strong>Reviewed by:</strong> {doc.assignedToReviewer?.name || doc.assignedToReviewer?.email || 'Unknown'}
+                          <strong>Reviewed by:</strong> {(() => {
+                            const reviewers = doc.assignedToReviewers || 
+                                             (doc.assignedToReviewer ? [doc.assignedToReviewer] : []);
+                            if (reviewers.length === 0) return 'Unknown';
+                            if (reviewers.length === 1) {
+                              const reviewer = reviewers[0];
+                              return `${reviewer.firstName || reviewer.name || ''} ${reviewer.lastName || ''}`.trim() || reviewer.email || 'Unknown';
+                            }
+                            return `${reviewers.length} reviewers`;
+                          })()}
                         </div>
                       </div>
                     </div>

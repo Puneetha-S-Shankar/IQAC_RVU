@@ -864,3 +864,52 @@
   background: #182E37;
   color: #fff;
 }
+
+/* User Status Indicators */
+.user-status-indicators {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #374752;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  margin: 0.5rem 0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status-indicator.uploaded {
+  background: rgba(40, 167, 69, 0.15);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.status-indicator.reviewed.approved {
+  background: rgba(40, 167, 69, 0.15);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.status-indicator.reviewed.rejected {
+  background: rgba(220, 53, 69, 0.15);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.review-status-summary {
+  padding: 0.75rem;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 6px;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.review-status-summary strong {
+  color: #ffc107;
+}

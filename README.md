@@ -17,9 +17,12 @@ A comprehensive web application for the Internal Quality Assurance Cell (IQAC) a
 
 ### **Key Features**
 
+- ✅ **Enhanced Multiple User Assignment**: Admins can assign multiple initiators and reviewers to same task
 - ✅ **Direct Task Assignment**: No complex intermediate tables, blazing fast queries
 - ✅ **Unified File System**: Single `master-files` bucket with standardized naming  
-- ✅ **One-Line Access Control**: Millisecond permission validation
+- ✅ **Team Collaboration**: Multiple users can collaborate on same assignments
+- ✅ **Backward Compatibility**: Existing single assignments continue to work seamlessly
+- ✅ **One-Line Access Control**: Millisecond permission validation for all assignment types
 - ✅ **Tab-Independent Auth**: Perfect for testing multiple user roles
 - ✅ **GridFS Storage**: Scalable document management with automatic chunking
 - ✅ **Real-Time Notifications**: Workflow-based user alerts and status updates
@@ -28,24 +31,30 @@ A comprehensive web application for the Internal Quality Assurance Cell (IQAC) a
 ### **System Architecture**
 
 ```
-🎯 SIMPLIFIED ARCHITECTURE (Production Ready)
+🎯 ENHANCED ARCHITECTURE (Multiple Users Support)
 
-Users (15) ──direct assignment──→ Tasks (19) ──linked──→ Files (GridFS)
+Users (15) ──multiple assignment──→ Tasks (19) ──linked──→ Files (GridFS)
      ↓                                ↓                        ↓
-Role-based      One-line access     master-files bucket
+Role-based      Enhanced access     master-files bucket
 permissions     control check       (unified storage)
      ↓                                ↓                        ↓
-Admin/User/     userId matches       Active files & chunks in
-Viewer roles    assignedTo fields    single master-files bucket
+Admin/User/     Arrays + Legacy     Active files & chunks in
+Viewer roles    support             single master-files bucket
+     ↓                                ↓                        ↓
+5 subroles      Multiple users      255KB auto-chunking
+(init/rev/      per task           with metadata tracking
+both/none)
 ```
 
-### **Access Control (Ultra-Fast)**
+### **Enhanced Access Control (Multiple Users Support)**
 ```javascript
-// Production-optimized permission check
-const canAccess = task.assignedToInitiator.equals(userId) || 
-                  task.assignedToReviewer.equals(userId) || 
+// Multiple users permission check (Enhanced)
+const canAccess = task.assignedToInitiators.includes(userId) || 
+                  task.assignedToReviewers.includes(userId) || 
+                  task.assignedToInitiator?.equals(userId) ||  // Legacy support
+                  task.assignedToReviewer?.equals(userId) ||   // Legacy support
                   user.role === 'admin';
-// Result: <10ms query time vs 150-300ms with complex joins
+// Result: <10ms query time with support for team collaboration
 ```
 
 ---

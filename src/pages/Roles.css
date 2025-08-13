@@ -51,6 +51,132 @@
   border: 1px solid rgba(213, 171, 93, 0.3);
 }
 
+/* Dynamic User Assignment Styles */
+.dynamic-user-group {
+  background: #1a2f38;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(213, 171, 93, 0.2);
+}
+
+.dynamic-user-group label {
+  color: #D5AB5D;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  display: block;
+  font-size: 1.1rem;
+}
+
+.dynamic-user-group select {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid rgba(213, 171, 93, 0.3);
+  border-radius: 4px;
+  background: #223b47;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.selected-users {
+  margin-top: 1rem;
+  background: #182E37;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid rgba(213, 171, 93, 0.1);
+}
+
+.selected-users h4 {
+  color: #D5AB5D;
+  margin: 0 0 0.8rem 0;
+  font-size: 0.95rem;
+  font-weight: bold;
+}
+
+.selected-user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #223b47;
+  padding: 0.7rem;
+  margin: 0.4rem 0;
+  border-radius: 5px;
+  border: 1px solid rgba(213, 171, 93, 0.1);
+  transition: all 0.2s ease;
+}
+
+.selected-user-item:hover {
+  background: #2a4552;
+  border-color: rgba(213, 171, 93, 0.3);
+}
+
+.selected-user-item span {
+  color: #fff;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.user-course {
+  color: #D5AB5D;
+  font-weight: bold;
+}
+
+.remove-user-btn {
+  background: #dc3545;
+  border: none;
+  padding: 0.3rem 0.5rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  margin-left: 0.5rem;
+}
+
+.remove-user-btn:hover {
+  background: #c82333;
+  transform: scale(1.1);
+}
+
+.add-more-section {
+  margin-top: 0.8rem;
+  padding: 0.5rem;
+  background: rgba(213, 171, 93, 0.1);
+  border-radius: 4px;
+  border-left: 3px solid #D5AB5D;
+}
+
+.add-more-hint {
+  color: #D5AB5D;
+  font-style: italic;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.clear-selections {
+  text-align: center;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: rgba(108, 117, 125, 0.1);
+  border-radius: 6px;
+}
+
+.clear-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.clear-btn:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
 .roles-content h2 {
   color: #D5AB5D;
   margin-bottom: 1.5rem;

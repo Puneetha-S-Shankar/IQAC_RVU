@@ -150,11 +150,11 @@ userSchema.methods.removeCourseId = function(courseId) {
 
 ---
 
-### **2. tasks Collection (13+ documents) ⭐**
-**Purpose**: Direct task assignments without complex intermediate tables  
-**Used for**: Workflow management, document assignments, simplified access control
+### **2. tasks Collection (13+ documents) ⭐ - ENHANCED FOR MULTIPLE USERS**
+**Purpose**: Direct task assignments with support for multiple initiators and reviewers  
+**Used for**: Workflow management, team collaboration, enhanced assignment flexibility
 
-#### **Schema Structure**
+#### **Enhanced Schema Structure (Multiple Users Support)**
 ```javascript
 const taskSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -164,17 +164,26 @@ const taskSchema = new mongoose.Schema({
   courseCode: { type: String, required: true }, // e.g., "CS101"
   courseName: { type: String, required: true }, // e.g., "Data Structures"
   
-  // 🎯 DIRECT USER ASSIGNMENT (Key Feature!)
+  // � ENHANCED MULTIPLE USER ASSIGNMENT SYSTEM
+  assignedToInitiators: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  }], // Multiple initiators support
+  assignedToReviewers: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  }], // Multiple reviewers support
+  
+  // 🔄 BACKWARD COMPATIBILITY (maintained for existing data)
   assignedToInitiator: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
+    ref: 'User' 
   },
   assignedToReviewer: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
+    ref: 'User' 
   },
+  
   assignedBy: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', 
@@ -196,77 +205,218 @@ const taskSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-// 🔐 SIMPLE ACCESS CONTROL METHODS
+// 🆕 ENHANCED ACCESS CONTROL METHODS (Multiple Users Support)
 taskSchema.methods.canUserAccess = function(userId, userRole) {
-  return this.assignedToInitiator.equals(userId) || 
-         this.assignedToReviewer.equals(userId) || 
-         userRole === 'admin';
+  if (userRole === 'admin') return true;
+  
+  // Check new array-based assignments first
+  const hasInitiatorAccess = this.assignedToInitiators && 
+    this.assignedToInitiators.some(id => id.toString() === userId.toString());
+  const hasReviewerAccess = this.assignedToReviewers && 
+    this.assignedToReviewers.some(id => id.toString() === userId.toString());
+  
+  if (hasInitiatorAccess || hasReviewerAccess) return true;
+  
+  // Backward compatibility check for existing single assignments
+  return this.assignedToInitiator?.equals(userId) || 
+         this.assignedToReviewer?.equals(userId);
 };
 
 taskSchema.methods.canUserUpload = function(userId) {
-  return this.assignedToInitiator.equals(userId);
+  // Check if user is in initiators array or legacy assignedToInitiator
+  const canUploadNew = this.assignedToInitiators && 
+    this.assignedToInitiators.some(id => id.toString() === userId.toString());
+  const canUploadLegacy = this.assignedToInitiator?.equals(userId);
+  return canUploadNew || canUploadLegacy;
 };
 
 taskSchema.methods.canUserReview = function(userId) {
-  return this.assignedToReviewer.equals(userId);
+  // Check if user is in reviewers array or legacy assignedToReviewer
+  const canReviewNew = this.assignedToReviewers && 
+    this.assignedToReviewers.some(id => id.toString() === userId.toString());
+  const canReviewLegacy = this.assignedToReviewer?.equals(userId);
+  return canReviewNew || canReviewLegacy;
 };
 
-// 📋 FIND TASKS FOR USER
+// 🆕 HELPER METHODS FOR MULTIPLE USER MANAGEMENT
+taskSchema.methods.addInitiator = function(userId) {
+  if (!this.assignedToInitiators) this.assignedToInitiators = [];
+  if (!this.assignedToInitiators.some(id => id.toString() === userId.toString())) {
+    this.assignedToInitiators.push(userId);
+  }
+};
+
+taskSchema.methods.addReviewer = function(userId) {
+  if (!this.assignedToReviewers) this.assignedToReviewers = [];
+  if (!this.assignedToReviewers.some(id => id.toString() === userId.toString())) {
+    this.assignedToReviewers.push(userId);
+  }
+};
+
+taskSchema.methods.removeInitiator = function(userId) {
+  if (this.assignedToInitiators) {
+    this.assignedToInitiators = this.assignedToInitiators.filter(
+      id => id.toString() !== userId.toString()
+    );
+  }
+};
+
+taskSchema.methods.removeReviewer = function(userId) {
+  if (this.assignedToReviewers) {
+    this.assignedToReviewers = this.assignedToReviewers.filter(
+      id => id.toString() !== userId.toString()
+    );
+  }
+};
+
+// 🆕 GET ALL ASSIGNED USERS (Including Legacy)
+taskSchema.methods.getAllInitiators = function() {
+  let initiators = [];
+  if (this.assignedToInitiators && this.assignedToInitiators.length > 0) {
+    initiators = [...this.assignedToInitiators];
+  }
+  if (this.assignedToInitiator && 
+      !initiators.some(id => id.toString() === this.assignedToInitiator.toString())) {
+    initiators.push(this.assignedToInitiator);
+  }
+  return initiators;
+};
+
+taskSchema.methods.getAllReviewers = function() {
+  let reviewers = [];
+  if (this.assignedToReviewers && this.assignedToReviewers.length > 0) {
+    reviewers = [...this.assignedToReviewers];
+  }
+  if (this.assignedToReviewer && 
+      !reviewers.some(id => id.toString() === this.assignedToReviewer.toString())) {
+    reviewers.push(this.assignedToReviewer);
+  }
+  return reviewers;
+};
+
+// 📋 ENHANCED FIND TASKS FOR USER (Multiple Users Support)
 taskSchema.statics.findForUser = function(userId, userRole) {
   if (userRole === 'admin') {
-    return this.find({}); // Admin sees all
+    return this.find({}).populate('assignedToInitiators assignedToReviewers assignedToInitiator assignedToReviewer assignedBy');
   }
   return this.find({
     $or: [
+      // New array-based assignments
+      { assignedToInitiators: userId },
+      { assignedToReviewers: userId },
+      // Legacy single assignments
       { assignedToInitiator: userId },
       { assignedToReviewer: userId }
     ]
-  });
+  }).populate('assignedToInitiators assignedToReviewers assignedToInitiator assignedToReviewer assignedBy');
 };
 ```
-
-#### **Access Control Visualization**
 ```
-🔐 TASK ACCESS CONTROL MATRIX
-┌─────────────────┬─────────┬─────────┬─────────┬─────────┐
-│   User Role     │  View   │ Upload  │ Review  │ Manage  │
-├─────────────────┼─────────┼─────────┼─────────┼─────────┤
-│ Admin           │   ALL   │   ALL   │   ALL   │   ALL   │
-│ Assigned Init.  │ ASSIGNED│   ✅    │   ❌    │   ❌    │
-│ Assigned Rev.   │ ASSIGNED│   ❌    │   ✅    │   ❌    │
-│ Not Assigned    │   ❌    │   ❌    │   ❌    │   ❌    │
-└─────────────────┴─────────┴─────────┴─────────┴─────────┘
 
-🎯 ONE-LINE ACCESS CHECK:
-task.assignedToInitiator === userId || 
-task.assignedToReviewer === userId || 
+#### **Enhanced Access Control Visualization (Multiple Users)**
+```
+🔐 ENHANCED TASK ACCESS CONTROL MATRIX
+┌─────────────────────┬─────────┬─────────┬─────────┬─────────┐
+│   User Role         │  View   │ Upload  │ Review  │ Manage  │
+├─────────────────────┼─────────┼─────────┼─────────┼─────────┤
+│ Admin               │   ALL   │   ALL   │   ALL   │   ALL   │
+│ Any Assigned Init.  │ ASSIGNED│   ✅    │   ❌    │   ❌    │
+│ Any Assigned Rev.   │ ASSIGNED│   ❌    │   ✅    │   ❌    │
+│ Multiple Init.      │ ASSIGNED│   ALL   │   ❌    │   ❌    │
+│ Multiple Rev.       │ ASSIGNED│   ❌    │   ALL   │   ❌    │
+│ Not Assigned        │   ❌    │   ❌    │   ❌    │   ❌    │
+└─────────────────────┴─────────┴─────────┴─────────┴─────────┘
+
+� ENHANCED ACCESS CHECK:
+// Check if user is in any of the assigned arrays
+task.assignedToInitiators.includes(userId) || 
+task.assignedToReviewers.includes(userId) || 
+task.assignedToInitiator === userId ||  // Legacy support
+task.assignedToReviewer === userId ||   // Legacy support
 user.role === 'admin'
+
+📊 MULTIPLE USER BENEFITS:
+✅ Team Collaboration: Multiple people can work on same task
+✅ Load Distribution: Spread work across multiple initiators
+✅ Diverse Reviews: Multiple reviewers for better quality
+✅ Redundancy: Backup if someone is unavailable
+✅ Backward Compatible: Existing single assignments still work
 ```
 
-#### **Sample Task Documents**
+#### **Sample Task Documents (Enhanced Multiple Users)**
 ```javascript
-// Example Tasks in System
+// 🆕 MULTIPLE USERS ASSIGNMENT EXAMPLE
 {
   _id: ObjectId("..."),
-  title: "CS101 Syllabus Upload",
+  title: "CS101 Curriculum Review - Team Assignment",
   courseCode: "CS101",
   courseName: "Data Structures",
-  assignedToInitiator: ObjectId("user1_id"),
-  assignedToReviewer: ObjectId("user2_id"),
+  
+  // Multiple initiators working together
+  assignedToInitiators: [
+    ObjectId("user1_id"), // Dr. Smith
+    ObjectId("user3_id"), // Dr. Wilson
+    ObjectId("user5_id")  // Dr. Garcia
+  ],
+  
+  // Multiple reviewers for comprehensive review
+  assignedToReviewers: [
+    ObjectId("user2_id"), // Dr. Jones
+    ObjectId("user4_id"), // Dr. Brown
+    ObjectId("user6_id")  // Dr. Davis
+  ],
+  
   assignedBy: ObjectId("admin_id"),
-  status: "pending",
-  fileId: null
+  status: "in_progress",
+  fileId: ObjectId("file_id"),
+  
+  // Legacy fields (null for new assignments)
+  assignedToInitiator: null,
+  assignedToReviewer: null
 }
 
+// 🔄 BACKWARD COMPATIBLE LEGACY ASSIGNMENT
 {
   _id: ObjectId("..."),
-  title: "EC301 Course Analysis",
+  title: "EC301 Course Analysis - Single Assignment",
   courseCode: "EC301", 
   courseName: "Electronics Circuits",
+  
+  // Legacy single assignments (still supported)
   assignedToInitiator: ObjectId("user3_id"),
   assignedToReviewer: ObjectId("user4_id"),
+  
+  // New arrays are empty for legacy tasks
+  assignedToInitiators: [],
+  assignedToReviewers: [],
+  
+  assignedBy: ObjectId("admin_id"),
   status: "completed",
   fileId: ObjectId("file_id")
+}
+
+// 🎯 HYBRID ASSIGNMENT (Migration Support)
+{
+  _id: ObjectId("..."),
+  title: "ME101 Handbook Update - Hybrid Assignment",
+  courseCode: "ME101",
+  courseName: "Mechanical Engineering Basics",
+  
+  // Both legacy and new assignments (during migration)
+  assignedToInitiator: ObjectId("user1_id"), // Primary initiator
+  assignedToInitiators: [
+    ObjectId("user1_id"), // Same as legacy
+    ObjectId("user7_id")  // Additional initiator
+  ],
+  
+  assignedToReviewer: ObjectId("user2_id"), // Primary reviewer
+  assignedToReviewers: [
+    ObjectId("user2_id"), // Same as legacy
+    ObjectId("user8_id")  // Additional reviewer
+  ],
+  
+  assignedBy: ObjectId("admin_id"),
+  status: "pending"
 }
 ```
 
