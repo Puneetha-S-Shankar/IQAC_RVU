@@ -528,3 +528,43 @@
   font-weight: 500;
   vertical-align: middle;
 }
+
+/* Drag and Drop Area Styles */
+.drag-drop-area {
+  border: 2px dashed rgba(213, 171, 93, 0.4);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  background: rgba(34, 59, 71, 0.2);
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #cbd5e1;
+  font-size: 1rem;
+}
+
+.drag-drop-area:hover {
+  background: rgba(34, 59, 71, 0.3);
+  border-color: rgba(213, 171, 93, 0.6);
+}
+
+.drag-drop-area.drag-active {
+  border: 2px solid #D5AB5D;
+  background: #223b47;
+  color: #f8fafc;
+  transform: scale(1.02);
+}
+
+.drag-drop-area span {
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* File name display */
+.file-name {
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: 8px;
+  text-align: center;
+}

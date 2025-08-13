@@ -214,7 +214,7 @@ const ProgramPage = ({ aboutTexts }) => {
   const [viewStatus, setViewStatus] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
-  const { user } = useContext(AuthContext);
+  const { user, getToken } = useContext(AuthContext);
   const role = user?.role;
 
   const handleDropdownSelect = (info) => {
@@ -252,6 +252,9 @@ const ProgramPage = ({ aboutTexts }) => {
     try {
       const response = await fetch("http://localhost:5000/api/files/upload", {
         method: "POST",
+        headers: {
+          'Authorization': `Bearer ${getToken()}`
+        },
         body: formData,
       });
       const data = await response.json();
@@ -275,7 +278,11 @@ const ProgramPage = ({ aboutTexts }) => {
     const meta = getFileMetadata();
     const params = new URLSearchParams(meta);
     try {
-      const response = await fetch(`http://localhost:5000/api/files?${params.toString()}`);
+      const response = await fetch(`http://localhost:5000/api/files?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${getToken()}`
+        }
+      });
       const data = await response.json();
       console.log("Files returned from backend:", data.files); // DEBUG
       if (response.ok && data.files && data.files.length > 0) {

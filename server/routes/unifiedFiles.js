@@ -3,8 +3,14 @@ const multer = require('multer');
 const { ObjectId } = require('mongodb');
 const router = express.Router();
 
+// Import authentication middleware
+const { authenticateToken } = require('./auth');
+
 // Import the unified file service
 const unifiedFileService = require('../services/unifiedFileService');
+
+// Apply authentication to all routes
+router.use(authenticateToken);
 
 // Multer configuration for memory storage
 const upload = multer({
