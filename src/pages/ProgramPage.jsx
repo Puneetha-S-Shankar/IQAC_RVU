@@ -298,7 +298,11 @@ const ProgramPage = ({ aboutTexts }) => {
       const response = await fetch("http://localhost:5000/api/files/upload", {
         method: "POST",
         headers: {
+<<<<<<< HEAD
           'Authorization': `Bearer ${token}`
+=======
+          'Authorization': `Bearer ${getToken()}`
+>>>>>>> b01ead78a98ae17dd82a18fb98333d40391d44c9
         },
         body: formData,
       });
@@ -327,10 +331,16 @@ const ProgramPage = ({ aboutTexts }) => {
     const meta = getFileMetadata();
     const params = new URLSearchParams(meta);
     try {
+<<<<<<< HEAD
       const token = getToken();
       const response = await fetch(`http://localhost:5000/api/files?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`
+=======
+      const response = await fetch(`http://localhost:5000/api/files?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${getToken()}`
+>>>>>>> b01ead78a98ae17dd82a18fb98333d40391d44c9
         }
       });
       const data = await response.json();

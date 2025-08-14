@@ -4,6 +4,24 @@ const File = require('../models/File');
 const Course = require('../models/Course');
 const environment = require('../config/environment');
 
+/**
+ * Unified File Service
+ * 
+ * File Naming Convention:
+ * All files are saved with the format: year_coursecode_docname.extension
+ * 
+ * Examples:
+ * - 2024_CS101_Syllabus.pdf
+ * - 2023_CS102_LessonPlan.docx
+ * - 2024_CS103_CourseAnalysis.pdf
+ * 
+ * Where:
+ * - year: 4-digit year (e.g., 2024)
+ * - coursecode: Course code (e.g., CS101, CS102)
+ * - docname: Document name/type (e.g., Syllabus, LessonPlan, CourseAnalysis)
+ * - extension: File extension (e.g., .pdf, .docx)
+ */
+
 class UnifiedFileService {
   constructor() {
     this.db = null;
@@ -29,14 +47,14 @@ class UnifiedFileService {
     }
   }
 
-  // Generate filename in Merin ma'am's format: year_courseCode_documentType_version.pdf
+  // Generate filename in format: year_coursecode_docname
   generateMasterFilename(year, courseCode, documentType, version = 1, extension = 'pdf') {
-    return `${year}_${courseCode}_${documentType}_v${version}.${extension}`;
+    return `${year}_${courseCode}_${documentType}.${extension}`;
   }
 
   // Parse master filename to extract components
   parseMasterFilename(filename) {
-    const regex = /^(\d{4})_([A-Z]{2,4}\d{3})_([a-z_]+)_v(\d+)\.(.+)$/;
+    const regex = /^(\d{4})_([A-Z]{2,4}\d{3})_([A-Za-z]+)\.(.+)$/;
     const match = filename.match(regex);
     
     if (match) {
@@ -45,8 +63,8 @@ class UnifiedFileService {
         courseCode: match[2],
         courseId: `${match[1]}_${match[2]}`,
         documentType: match[3],
-        version: parseInt(match[4]),
-        extension: match[5]
+        version: 1, // Default version since we removed version from filename
+        extension: match[4]
       };
     }
     return null;
@@ -399,25 +417,30 @@ class UnifiedFileService {
     }
   }
 
-  // Generate filename in old format: year_course.code_file.name
+  // Generate filename in format: year_coursecode_docname
   generateFormattedFilename(metadata, originalName) {
     const parts = [];
     
+    // Add year
     if (metadata.year) {
       parts.push(metadata.year);
     }
     
+    // Add course code
     if (metadata.courseCode) {
       parts.push(metadata.courseCode);
     }
     
+    // Add underscore separator
     if (parts.length > 0) {
       parts.push('_');
     }
     
+    // Get document name without extension
     const nameWithoutExt = originalName.replace(/\.[^/.]+$/, '');
     parts.push(nameWithoutExt);
     
+    // Add file extension
     const extension = originalName.split('.').pop();
     if (extension && extension !== originalName) {
       parts.push('.');
