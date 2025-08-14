@@ -131,18 +131,54 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         await bucket.delete(existing._id);
       }
       
-      // Create upload stream with assignment metadata
+      // Create upload stream with assignment metadata and fileID
+      const assignmentMetadata = {
+        category,
+        assignmentId,
+        uploaderEmail,
+        courseCode: assignment.courseCode,
+        courseName: assignment.courseName,
+        year: new Date().getFullYear().toString(),
+        docType: 'assignment-submission',
+        uploadDate: new Date(),
+        status: 'uploaded'
+      };
+
+      // Generate fileID for assignment
+      const generateFileID = (metadata) => {
+        if (!metadata || !metadata.year || !metadata.courseCode || !metadata.docType) {
+          return null;
+        }
+
+        const cleanString = (str) => {
+          return str.toString()
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '')
+            .trim();
+        };
+
+        const parts = [
+          metadata.year,
+          cleanString(metadata.courseCode),
+          cleanString(metadata.docType)
+        ].filter(part => part && part.length > 0);
+
+        if (parts.length < 2) {
+          return null;
+        }
+
+        return parts.join('_');
+      };
+
+      const fileID = generateFileID(assignmentMetadata);
+      if (fileID) {
+        assignmentMetadata.fileID = fileID;
+      }
+
       const uploadStream = bucket.openUploadStream(req.file.originalname, {
         contentType: req.file.mimetype,
-        metadata: {
-          category,
-          assignmentId,
-          uploaderEmail,
-          courseCode: assignment.courseCode,
-          courseName: assignment.courseName,
-          uploadDate: new Date(),
-          status: 'uploaded'
-        }
+        fileID: fileID, // Store fileID at top level
+        metadata: assignmentMetadata
       });
 
       uploadStream.end(req.file.buffer);
@@ -159,6 +195,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
           res.json({
             message: 'File uploaded successfully',
             fileId: uploadStream.id,
+            fileID: assignmentMetadata.fileID || null,
             assignmentId,
             status: 'file-uploaded'
           });
@@ -203,52 +240,109 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       }
     }
 
+    // Generate fileID before upload
+    const generateFileID = (metadata) => {
+      console.log('Generating fileID for metadata:', {
+        year: metadata.year,
+        courseCode: metadata.courseCode,
+        docType: metadata.docType,
+        programme: metadata.programme
+      });
+
+      // Try with year, courseCode, docType first
+      if (metadata.year && metadata.courseCode && metadata.docType) {
+        const cleanString = (str) => {
+          return str.toString()
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '')
+            .trim();
+        };
+
+        const parts = [
+          metadata.year,
+          cleanString(metadata.courseCode),
+          cleanString(metadata.docType)
+        ].filter(part => part && part.length > 0);
+
+        if (parts.length >= 3) {
+          const fileID = parts.join('_');
+          console.log('Generated fileID:', fileID);
+          return fileID;
+        }
+      }
+
+      // Fallback: try with year, programme, docType if courseCode is missing
+      if (metadata.year && metadata.programme && metadata.docType) {
+        const cleanString = (str) => {
+          return str.toString()
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '')
+            .trim();
+        };
+
+        const parts = [
+          metadata.year,
+          cleanString(metadata.programme),
+          cleanString(metadata.docType)
+        ].filter(part => part && part.length > 0);
+
+        if (parts.length >= 3) {
+          const fileID = parts.join('_');
+          console.log('Generated fallback fileID:', fileID);
+          return fileID;
+        }
+      }
+
+      console.log('Could not generate fileID - insufficient metadata');
+      return null;
+    };
+
+    // Prepare metadata for fileID generation
+    const fileMetadata = {
+      originalName: req.file.originalname,
+      uploadedBy: req.body.uploadedBy || req.body.userId || 'anonymous',
+      category: req.body.category || 'general',
+      description: req.body.description || '',
+      tags: req.body.tags ? req.body.tags.split(',').map(tag => tag.trim()) : [],
+      programme: req.body.programme || '',
+      docLevel: req.body.docLevel || '',
+      year: req.body.year || '',
+      batch: req.body.batch || '',
+      semester: req.body.semester || '',
+      courseCode: req.body.courseCode || '',
+      docType: req.body.docType || '',
+      docNumber: req.body.docNumber ? parseInt(req.body.docNumber) : undefined,
+      uploadedAt: new Date(),
+      uploadDate: req.body.uploadDate || new Date().toISOString(),
+      size: req.file.size,
+      contentType: req.file.mimetype,
+      status: req.body.status || 'pending',
+      taskId: req.body.taskId || null
+    };
+
+    // Generate fileID
+    const fileID = generateFileID(fileMetadata);
+    if (fileID) {
+      fileMetadata.fileID = fileID;
+    }
+
     // Upload to GridFS
     const uploadStream = bucket.openUploadStream(req.file.originalname, {
       contentType: req.file.mimetype,
-      metadata: {
-        originalName: req.file.originalname,
-        uploadedBy: req.body.uploadedBy || req.body.userId || 'anonymous',
-        category: req.body.category || 'general',
-        description: req.body.description || '',
-        tags: req.body.tags ? req.body.tags.split(',').map(tag => tag.trim()) : [],
-        programme: req.body.programme || '',
-        docLevel: req.body.docLevel || '',
-        year: req.body.year || '',
-        batch: req.body.batch || '',
-        semester: req.body.semester || '',
-        docType: req.body.docType || '',
-        docNumber: req.body.docNumber ? parseInt(req.body.docNumber) : undefined,
-        uploadedAt: new Date(),
-        uploadDate: req.body.uploadDate || new Date().toISOString(),
-        size: req.file.size,
-        contentType: req.file.mimetype,
-        status: req.body.status || 'pending', // Add status field
-        taskId: req.body.taskId || null // Add taskId field
-      }
+      fileID: fileID, // Store fileID at top level
+      metadata: fileMetadata
     });
     
     uploadStream.end(req.file.buffer);
     
     uploadStream.on('finish', () => {
-      // Fix: Don't use the file parameter, use uploadStream.id instead
       res.status(201).json({
         message: 'File uploaded successfully',
         file: {
           _id: uploadStream.id,
+          fileID: fileMetadata.fileID || null,
           filename: req.file.originalname,
-          metadata: {
-            originalName: req.file.originalname,
-            uploadedBy: req.body.uploadedBy || req.body.userId || 'anonymous',
-            category: req.body.category || 'general',
-            description: req.body.description || '',
-            docNumber: req.body.docNumber ? parseInt(req.body.docNumber) : undefined,
-            uploadDate: req.body.uploadDate || new Date().toISOString(),
-            contentType: req.file.mimetype,
-            size: req.file.size,
-            status: req.body.status || 'pending',
-            taskId: req.body.taskId || null
-          }
+          metadata: fileMetadata
         }
       });
     });
@@ -263,7 +357,24 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// Get all files (metadata) - REFACTORED
+// Get file by fileID (search at top level)
+router.get('/by-fileid/:fileId', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const file = await db.collection('master-files.files').findOne({ 
+      'fileID': req.params.fileId 
+    });
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    res.json({ file });
+  } catch (error) {
+    console.error('Get file by fileID error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get all files (metadata) - Enhanced with fileID from GridFS
 router.get('/', async (req, res) => {
   try {
     const db = mongoose.connection.db;
@@ -276,7 +387,9 @@ router.get('/', async (req, res) => {
       }
     });
 
+    // Get files from GridFS (fileID is now in metadata)
     const files = await db.collection('master-files.files').find(query).toArray();
+    
     res.json({ files });
   } catch (error) {
     console.error('Get files error:', error);

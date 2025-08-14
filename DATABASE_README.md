@@ -25,19 +25,18 @@ User ← directly assigned to → Task
 Based on the current MongoDB Atlas instance, here are all the collections and their purposes:
 
 ```
-IQAC Database (MongoDB Atlas)
+IQAC Database (MongoDB Atlas) - Final State
 ├── 📋 Core Collections (Active - Production Ready)
-│   ├── users (15 documents) ⭐ PRIMARY
-│   ├── tasks (13+ documents) ⭐ PRIMARY  
-│   ├── notifications (16+ documents) ⭐ PRIMARY
-│   └── test (dev collection) 🧪 TESTING
+│   ├── users (17 documents) ⭐ PRIMARY
+│   ├── tasks (6 documents) ⭐ PRIMARY  
+│   ├── notifications (20 documents) ⭐ PRIMARY
+│   └── courses (0 documents) 📚 COURSE MANAGEMENT
 │
-├── 📁 File Storage (GridFS - Target Architecture)
-│   ├── master-files.files (active) ✅
-│   └── master-files.chunks (active) ✅
+├── 📁 File Storage (GridFS - Unified)
+│   ├── master-files.files (22 documents) ✅ ACTIVE
+│   └── master-files.chunks (151 chunks) ✅ ACTIVE
 │
-└── 📊 TOTAL: Core collections + single unified bucket
-  (Legacy `files.*` and `uploads.*` collections deleted Aug 12, 2025)
+└── 📊 TOTAL: 6 collections (legacy collections removed Aug 13, 2025)
 ```
 
 ### **File/Chunk Count Analysis**
@@ -502,7 +501,169 @@ Approval/Reject → Final notification   →  Workflow complete
 
 ---
 
-### **4. test Collection 🧪**
+### **4. courses Collection (0 documents) 📚**
+**Purpose**: Course catalog management and organization  
+**Used for**: Course definitions, curriculum tracking, admin course management
+
+#### **Schema Structure**
+```javascript
+const courseSchema = new mongoose.Schema({
+  courseCode: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    uppercase: true 
+  }, // e.g., "CS101"
+  courseName: { 
+    type: String, 
+    required: true 
+  }, // e.g., "Data Structures"
+  
+  department: { 
+    type: String, 
+    required: true 
+  }, // e.g., "Computer Science"
+  
+  semester: { 
+    type: Number, 
+    min: 1, 
+    max: 8 
+  }, // 1-8 for engineering programs
+  
+  credits: { 
+    type: Number, 
+    min: 1, 
+    max: 6,
+    default: 3 
+  },
+  
+  description: String,
+  objectives: [String], // Learning objectives
+  outcomes: [String],   // Course outcomes
+  
+  // Curriculum details
+  syllabus: {
+    units: [{
+      title: String,
+      topics: [String],
+      hours: Number
+    }]
+  },
+  
+  // Assessment structure
+  assessment: {
+    internal: { type: Number, default: 40 },
+    external: { type: Number, default: 60 },
+    practicals: { type: Number, default: 0 }
+  },
+  
+  // Status and tracking
+  isActive: { type: Boolean, default: true },
+  academicYear: { type: String }, // e.g., "2024-25"
+  lastModified: { type: Date, default: Date.now },
+  modifiedBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  },
+  
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+// 📋 COURSE METHODS
+courseSchema.methods.getFullTitle = function() {
+  return `${this.courseCode} - ${this.courseName}`;
+};
+
+courseSchema.methods.getTotalHours = function() {
+  return this.syllabus.units.reduce((total, unit) => total + unit.hours, 0);
+};
+
+courseSchema.statics.findByDepartment = function(department) {
+  return this.find({ department, isActive: true });
+};
+
+courseSchema.statics.findBySemester = function(semester) {
+  return this.find({ semester, isActive: true });
+};
+```
+
+#### **Course Management Features**
+```javascript
+// Admin course operations
+- Add new courses to catalog
+- Update course details and syllabus
+- Activate/deactivate courses
+- Bulk import course data
+- Generate course reports
+
+// Integration with tasks
+- Courses provide courseCode and courseName for task creation
+- Course catalog ensures consistent naming across system
+- Semester-wise course organization
+- Department-wise course filtering
+```
+
+#### **Sample Course Documents**
+```javascript
+// Example course entries
+{
+  courseCode: "CS101",
+  courseName: "Programming Fundamentals",
+  department: "Computer Science Engineering",
+  semester: 1,
+  credits: 4,
+  description: "Introduction to programming using C language",
+  objectives: [
+    "Understand basic programming concepts",
+    "Learn C programming syntax and structure",
+    "Develop problem-solving skills"
+  ],
+  outcomes: [
+    "Write simple C programs",
+    "Use control structures effectively",
+    "Implement basic algorithms"
+  ],
+  isActive: true,
+  academicYear: "2024-25"
+}
+
+{
+  courseCode: "EC301", 
+  courseName: "Electronics Circuits",
+  department: "Electronics and Communication",
+  semester: 5,
+  credits: 3,
+  assessment: {
+    internal: 50,
+    external: 50,
+    practicals: 25
+  },
+  isActive: true
+}
+```
+
+#### **Frontend Integration (Discussed)**
+```javascript
+// Course management pages (to be implemented)
+- /admin/courses - Course catalog management
+- /admin/courses/add - Add new course
+- /admin/courses/:id/edit - Edit course details
+- /courses - Public course catalog view
+- /courses/:code - Individual course details
+
+// API endpoints (to be implemented)
+GET    /api/courses              // List all courses
+POST   /api/courses              // Add new course (admin)
+GET    /api/courses/:code        // Get course details
+PUT    /api/courses/:code        // Update course (admin)
+DELETE /api/courses/:code        // Deactivate course (admin)
+GET    /api/courses/dept/:name   // Get courses by department
+```
+
+---
+
+### **5. test Collection 🧪**
 **Purpose**: Development testing and data validation  
 **Used for**: System testing, development workflow, temporary data storage
 

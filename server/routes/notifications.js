@@ -3,19 +3,28 @@ const Notification = require('../models/Notification');
 const { authenticateToken } = require('./auth');
 const router = express.Router();
 
-// Get notifications for current user
+// Get notifications for current user with categories
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user._id;
-    const { unread } = req.query;
+    const { category, unread } = req.query;
     
-    const query = { userId };
+    let query = { userId };
+    
+    // Filter by category (new/read)
+    if (category === 'new') {
+      query.isRead = false;
+    } else if (category === 'read') {
+      query.isRead = true;
+    }
+    
+    // Legacy support for unread parameter
     if (unread === 'true') query.isRead = false;
     
     const notifications = await Notification.find(query)
-      .populate('taskId', 'title category courseCode courseName')
+      .populate('taskId', 'title category courseCode courseName _id')
       .sort({ createdAt: -1 })
-      .limit(50); // Limit to last 50 notifications
+      .limit(50);
     
     res.json(notifications);
   } catch (error) {
@@ -24,29 +33,39 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Get notifications for a user
-router.get('/user/:userId', async (req, res) => {
+// Get notifications categorized (new vs read)
+router.get('/categorized', authenticateToken, async (req, res) => {
   try {
-    const { userId } = req.params;
-    const { unread } = req.query;
+    const userId = req.user._id;
     
-    const query = { userId };
-    if (unread === 'true') query.isRead = false;
+    const [newNotifications, readNotifications] = await Promise.all([
+      Notification.find({ userId, isRead: false })
+        .populate('taskId', 'title category courseCode courseName _id')
+        .sort({ createdAt: -1 })
+        .limit(25),
+      Notification.find({ userId, isRead: true })
+        .populate('taskId', 'title category courseCode courseName _id')
+        .sort({ createdAt: -1 })
+        .limit(25)
+    ]);
     
-    const notifications = await Notification.find(query)
-      .populate('taskId', 'title category')
-      .sort({ createdAt: -1 })
-      .limit(50); // Limit to last 50 notifications
-    
-    res.json(notifications);
+    res.json({
+      new: newNotifications,
+      read: readNotifications,
+      counts: {
+        new: newNotifications.length,
+        read: readNotifications.length,
+        total: newNotifications.length + readNotifications.length
+      }
+    });
   } catch (error) {
-    console.error('Get notifications error:', error);
-    res.status(500).json({ error: 'Failed to fetch notifications' });
+    console.error('Get categorized notifications error:', error);
+    res.status(500).json({ error: 'Failed to fetch categorized notifications' });
   }
 });
 
-// Mark notification as read
-router.put('/:notificationId/read', async (req, res) => {
+// Mark notification as read and get navigation info
+router.put('/:notificationId/read', authenticateToken, async (req, res) => {
   try {
     const { notificationId } = req.params;
     
@@ -54,50 +73,162 @@ router.put('/:notificationId/read', async (req, res) => {
       notificationId,
       { isRead: true },
       { new: true }
-    );
+    ).populate('taskId', 'title category courseCode courseName _id');
     
     if (!notification) {
       return res.status(404).json({ error: 'Notification not found' });
     }
     
-    res.json({ message: 'Notification marked as read' });
+    // Provide navigation information based on notification type
+    let navigationInfo = {};
+    
+    switch (notification.type) {
+      case 'task_assigned':
+      case 'assignment_assigned':
+        navigationInfo = {
+          page: '/roles',
+          section: 'assignments',
+          taskId: notification.taskId?._id
+        };
+        break;
+      case 'file_submitted':
+      case 'file_approved':
+      case 'file_rejected':
+      case 'reviewer_approved':
+      case 'ready_for_final_approval':
+        navigationInfo = {
+          page: '/roles',
+          section: 'assignments',
+          taskId: notification.taskId?._id,
+          action: 'review'
+        };
+        break;
+      case 'assignment_changed':
+        navigationInfo = {
+          page: '/roles',
+          section: 'assignments',
+          taskId: notification.taskId?._id
+        };
+        break;
+      default:
+        navigationInfo = {
+          page: '/roles',
+          section: 'assignments'
+        };
+    }
+    
+    res.json({ 
+      message: 'Notification marked as read',
+      notification,
+      navigation: navigationInfo
+    });
   } catch (error) {
     console.error('Mark notification read error:', error);
     res.status(500).json({ error: 'Failed to mark notification as read' });
   }
 });
 
-// Mark all notifications as read for a user
-router.put('/user/:userId/read-all', async (req, res) => {
+// Get notification counts
+router.get('/counts', authenticateToken, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user._id;
     
-    await Notification.updateMany(
-      { userId: userId, isRead: false },
-      { isRead: true }
-    );
+    const [newCount, readCount, totalCount] = await Promise.all([
+      Notification.countDocuments({ userId, isRead: false }),
+      Notification.countDocuments({ userId, isRead: true }),
+      Notification.countDocuments({ userId })
+    ]);
     
-    res.json({ message: 'All notifications marked as read' });
+    res.json({
+      new: newCount,
+      read: readCount,
+      total: totalCount
+    });
   } catch (error) {
-    console.error('Mark all notifications read error:', error);
-    res.status(500).json({ error: 'Failed to mark all notifications as read' });
+    console.error('Get notification counts error:', error);
+    res.status(500).json({ error: 'Failed to get notification counts' });
   }
 });
 
-// Get unread notification count
-router.get('/user/:userId/unread-count', async (req, res) => {
+// Click notification (mark as read and get navigation)
+router.post('/:notificationId/click', authenticateToken, async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    
+    // Mark as read
+    const notification = await Notification.findByIdAndUpdate(
+      notificationId,
+      { isRead: true },
+      { new: true }
+    ).populate('taskId', 'title category courseCode courseName _id');
+    
+    if (!notification) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+    
+    // Generate navigation URL based on notification type
+    let navigationUrl = '/roles';
+    let queryParams = {};
+    
+    if (notification.taskId) {
+      queryParams.taskId = notification.taskId._id;
+      
+      switch (notification.type) {
+        case 'file_submitted':
+        case 'file_approved':
+        case 'file_rejected':
+        case 'reviewer_approved':
+        case 'ready_for_final_approval':
+          queryParams.action = 'review';
+          break;
+        case 'task_assigned':
+        case 'assignment_assigned':
+          queryParams.action = 'view';
+          break;
+      }
+    }
+    
+    // Build query string
+    const queryString = Object.keys(queryParams).length > 0 
+      ? '?' + new URLSearchParams(queryParams).toString()
+      : '';
+    
+    res.json({
+      message: 'Notification clicked and marked as read',
+      navigationUrl: navigationUrl + queryString,
+      notification
+    });
+  } catch (error) {
+    console.error('Click notification error:', error);
+    res.status(500).json({ error: 'Failed to process notification click' });
+  }
+});
+
+// Get notifications for a user
+router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
+    const { unread, category } = req.query;
     
-    const count = await Notification.countDocuments({
-      userId: userId,
-      isRead: false
-    });
+    let query = { userId };
     
-    res.json({ count });
+    if (category === 'new') {
+      query.isRead = false;
+    } else if (category === 'read') {
+      query.isRead = true;
+    } else if (unread === 'true') {
+      query.isRead = false;
+    }
+    
+    const notifications = await Notification.find(query)
+      .populate('taskId', 'title category courseCode courseName _id')
+      .sort({ createdAt: -1 })
+      .limit(50);
+    
+    res.json(notifications);
   } catch (error) {
-    console.error('Get unread count error:', error);
-    res.status(500).json({ error: 'Failed to get unread count' });
+    console.error('Get notifications error:', error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
   }
 });
 
@@ -139,7 +270,7 @@ router.delete('/clear-all', authenticateToken, async (req, res) => {
 });
 
 // Delete a notification
-router.delete('/:notificationId', async (req, res) => {
+router.delete('/:notificationId', authenticateToken, async (req, res) => {
   try {
     const { notificationId } = req.params;
     

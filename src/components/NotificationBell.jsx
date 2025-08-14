@@ -5,10 +5,8 @@ import './NotificationBell.css';
 
 const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { getUnreadCount } = useNotifications();
+  const { unreadCount } = useNotifications();
   
-  const unreadCount = getUnreadCount();
-
   const toggleNotifications = () => {
     setIsOpen(!isOpen);
   };

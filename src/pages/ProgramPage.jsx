@@ -213,13 +213,49 @@ const ProgramPage = ({ aboutTexts }) => {
   const [viewedFile, setViewedFile] = useState(null);
   const [viewStatus, setViewStatus] = useState("");
   const [dragActive, setDragActive] = useState(false);
+  const [existingFile, setExistingFile] = useState(null);
+  const [isReupload, setIsReupload] = useState(false);
   const fileInputRef = useRef(null);
-  const { user } = useContext(AuthContext);
+  const { user, getToken } = useContext(AuthContext);
   const role = user?.role;
 
   const handleDropdownSelect = (info) => {
     setDocInfo(info);
     setMainView(info.action);
+    setExistingFile(null);
+    setIsReupload(false);
+    
+    // Check for existing file when selecting upload action
+    if (info.action === "upload") {
+      checkExistingFile(info);
+    }
+  };
+
+  const checkExistingFile = async (info) => {
+    try {
+      const meta = {
+        programme: programName,
+        docLevel: info?.doc ? "course" : "programme",
+        year: info?.year,
+        batch: info?.batch,
+        semester: info?.batch,
+        courseCode: info?.courseCode || "",
+        docType: info?.doc || ""
+      };
+      const params = new URLSearchParams(meta);
+      const token = getToken();
+      const response = await fetch(`http://localhost:5000/api/files?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok && data.files && data.files.length > 0) {
+        setExistingFile(data.files[0]);
+      }
+    } catch (error) {
+      console.error('Error checking existing file:', error);
+    }
   };
 
   const handleFileChange = (e) => {
@@ -233,6 +269,7 @@ const ProgramPage = ({ aboutTexts }) => {
       year: docInfo?.year,
       batch: docInfo?.batch,
       semester: docInfo?.batch, // Always set semester to batch value
+      courseCode: docInfo?.courseCode || "",
       docType: docInfo?.doc || ""
     };
   };
@@ -242,6 +279,13 @@ const ProgramPage = ({ aboutTexts }) => {
       setUploadStatus("Please select a file and document info.");
       return;
     }
+    
+    // Check if replacing existing file
+    if (existingFile && !isReupload) {
+      setUploadStatus("A file already exists. Click 'Replace File' to reupload.");
+      return;
+    }
+    
     setUploadStatus("");
     const meta = getFileMetadata();
     const formData = new FormData();
@@ -250,13 +294,21 @@ const ProgramPage = ({ aboutTexts }) => {
     formData.append("uploadedBy", "admin"); // Replace with actual user if available
 
     try {
+      const token = getToken();
       const response = await fetch("http://localhost:5000/api/files/upload", {
         method: "POST",
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData,
       });
       const data = await response.json();
       if (response.ok) {
         setUploadStatus("File uploaded successfully!");
+        setSelectedFile(null);
+        setIsReupload(false);
+        // Refresh existing file info
+        checkExistingFile(docInfo);
       } else {
         setUploadStatus(data.error || "Upload failed.");
       }
@@ -275,7 +327,12 @@ const ProgramPage = ({ aboutTexts }) => {
     const meta = getFileMetadata();
     const params = new URLSearchParams(meta);
     try {
-      const response = await fetch(`http://localhost:5000/api/files?${params.toString()}`);
+      const token = getToken();
+      const response = await fetch(`http://localhost:5000/api/files?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await response.json();
       console.log("Files returned from backend:", data.files); // DEBUG
       if (response.ok && data.files && data.files.length > 0) {
@@ -384,8 +441,63 @@ const ProgramPage = ({ aboutTexts }) => {
                 onChange={handleFileChange}
               />
             </div>
+            
+            {/* Show existing file if present */}
+            {existingFile && (
+              <div style={{ 
+                background: "#f8f9fa", 
+                border: "1px solid #dee2e6", 
+                borderRadius: 8, 
+                padding: 16, 
+                marginBottom: 12 
+              }}>
+                <h4 style={{ margin: "0 0 8px 0", color: "#495057" }}>Existing File:</h4>
+                <p style={{ margin: "0 0 8px 0", fontSize: "14px" }}>{existingFile.filename}</p>
+                <p style={{ margin: "0 0 12px 0", fontSize: "12px", color: "#6c757d" }}>
+                  Uploaded: {new Date(existingFile.uploadDate).toLocaleString()}
+                </p>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <a 
+                    href={`http://localhost:5000/api/files/${existingFile._id}/download`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ 
+                      background: "#007bff", 
+                      color: "white", 
+                      padding: "6px 12px", 
+                      borderRadius: "4px", 
+                      textDecoration: "none", 
+                      fontSize: "12px" 
+                    }}
+                  >
+                    View Current
+                  </a>
+                  <button 
+                    onClick={() => setIsReupload(true)}
+                    style={{ 
+                      background: "#ffc107", 
+                      color: "#212529", 
+                      border: "none", 
+                      padding: "6px 12px", 
+                      borderRadius: "4px", 
+                      fontSize: "12px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Replace File
+                  </button>
+                </div>
+              </div>
+            )}
+            
             <span className="file-name">{selectedFile ? selectedFile.name : "No file chosen"}</span>
-            <button className="curriculum-dev-nav-btn" style={{ marginTop: 12 }} onClick={handleUpload}>Upload</button>
+            <button 
+              className="curriculum-dev-nav-btn" 
+              style={{ marginTop: 12 }} 
+              onClick={handleUpload}
+            >
+              {existingFile && isReupload ? "Reupload" : "Upload"}
+            </button>
             {uploadStatus && <div style={{ marginTop: 8, color: uploadStatus.includes("success") ? "green" : "red" }}>{uploadStatus}</div>}
           </div>
         )}

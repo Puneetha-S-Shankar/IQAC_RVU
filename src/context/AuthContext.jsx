@@ -23,12 +23,15 @@ const getTabId = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [tabId] = useState(getTabId);
 
   // Check for existing user data on component mount
   useEffect(() => {
+    console.log('🔑 AuthContext: Checking for existing auth...');
+    
     // Clear any old localStorage auth data to prevent conflicts
     localStorage.removeItem('user');
     localStorage.removeItem('token');
@@ -37,6 +40,9 @@ export const AuthProvider = ({ children }) => {
     const sessionUser = sessionStorage.getItem('user');
     const sessionToken = sessionStorage.getItem('token');
     
+    console.log('🔑 AuthContext: Session user exists:', !!sessionUser);
+    console.log('🔑 AuthContext: Session token exists:', !!sessionToken);
+    
     if (sessionUser && sessionToken) {
       try {
         if (sessionToken === 'logged-in') {
@@ -44,8 +50,10 @@ export const AuthProvider = ({ children }) => {
           sessionStorage.removeItem('token');
           return;
         }
-        setUser(JSON.parse(sessionUser));
-        console.log('Restored session for tab:', tabId, JSON.parse(sessionUser));
+        const parsedUser = JSON.parse(sessionUser);
+        setUser(parsedUser);
+        setToken(sessionToken);
+        console.log('🔑 AuthContext: Restored session for tab:', tabId, parsedUser);
         return;
       } catch (error) {
         console.error('Error parsing session user data:', error);
@@ -69,13 +77,16 @@ export const AuthProvider = ({ children }) => {
       const data = await res.json();
       if (res.ok) {
         setUser(data.user);
+        setToken(data.token);
         setError(null);
         
         // Store user data and JWT token ONLY in sessionStorage (tab-specific)
         sessionStorage.setItem('user', JSON.stringify(data.user));
         sessionStorage.setItem('token', data.token);
         
-        console.log('Login successful for tab:', tabId, data.user);
+        console.log('🎉 Login successful for tab:', tabId);
+        console.log('👤 User stored:', data.user);
+        console.log('🎫 Token stored:', !!data.token);
         
         // Add welcome notification (you can remove this later)
         if (window.addWelcomeNotification) {
@@ -96,6 +107,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     // Clear ONLY session-specific data (tab-independent)
     sessionStorage.removeItem('user');
     sessionStorage.removeItem('token');
@@ -105,11 +117,13 @@ export const AuthProvider = ({ children }) => {
 
   const getToken = () => {
     // Only use sessionStorage (tab-specific)
-    return sessionStorage.getItem('token');
+    const tokenFromStorage = sessionStorage.getItem('token');
+    console.log('🔑 getToken called, token exists:', !!tokenFromStorage);
+    return tokenFromStorage;
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, getToken, loading, error, tabId }}>
+    <AuthContext.Provider value={{ user, login, logout, getToken, token, loading, error, tabId }}>
       {children}
     </AuthContext.Provider>
   );

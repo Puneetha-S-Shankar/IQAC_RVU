@@ -7,6 +7,9 @@ const fileSchema = new mongoose.Schema({
   contentType: { type: String, required: true },
   size: { type: Number, required: true },
   
+  // Unique file identifier in format: year_coursecode_docname
+  fileID: { type: String, unique: true, sparse: true },
+  
   // Unified metadata - covers all file types
   metadata: {
     // File categorization
@@ -77,6 +80,7 @@ fileSchema.index({ 'metadata.uploadedBy': 1 });
 fileSchema.index({ 'metadata.status': 1 });
 fileSchema.index({ 'metadata.uploadedAt': -1 });
 fileSchema.index({ filename: 1 }); // Index for filename searches
+fileSchema.index({ fileID: 1 }); // Index for fileID searches
 
 // Virtual for full academic path
 fileSchema.virtual('academicPath').get(function() {
@@ -100,9 +104,44 @@ fileSchema.virtual('fileType').get(function() {
   return 'General';
 });
 
+// Method to generate fileID from metadata
+fileSchema.methods.generateFileID = function() {
+  const meta = this.metadata;
+  const parts = [];
+  
+  // Add year if available
+  if (meta.year) {
+    parts.push(meta.year);
+  }
+  
+  // Add course code if available
+  if (meta.courseCode) {
+    parts.push(meta.courseCode.replace(/\s+/g, '').toUpperCase());
+  }
+  
+  // Add document name/type if available
+  if (meta.docType) {
+    parts.push(meta.docType.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, ''));
+  } else if (meta.docLevel) {
+    parts.push(meta.docLevel.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, ''));
+  }
+  
+  // If we have at least 2 parts, create the fileID
+  if (parts.length >= 2) {
+    return parts.join('_');
+  }
+  
+  return null;
+};
+
 // Pre-save middleware
 fileSchema.pre('save', function(next) {
   this.updatedAt = new Date();
+  
+  // Generate fileID if not already set and we have the required metadata
+  if (!this.fileID && this.metadata) {
+    this.fileID = this.generateFileID();
+  }
   
   // Generate academic path for easy searching
   if (this.metadata.programme && this.metadata.year && this.metadata.courseCode) {

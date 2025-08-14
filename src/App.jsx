@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import NotificationBell from "./components/NotificationBell";
-import NotificationProvider from "./context/NotificationContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AuthContext } from "./context/AuthContext";
 
@@ -28,6 +28,10 @@ const aboutTexts = {
 const App = () => {
   const { user } = useContext(AuthContext);
   const isAuthenticated = !!user;
+  
+  // Debug logging
+  console.log('📱 App: User object:', user);
+  console.log('📱 App: isAuthenticated:', isAuthenticated);
   
   return (
     <Router>

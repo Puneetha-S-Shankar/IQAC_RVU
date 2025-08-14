@@ -450,6 +450,99 @@ const TeachingAndLearning = () => {
     return deadlineDate < today;
   };
 
+  // Enhanced function to generate and store review document
+  const handleGenerateReviewDocument = async (assignment) => {
+    try {
+      showMessage('Generating review document...', 'info');
+      
+      const response = await fetch(`http://localhost:5000/api/review-documents/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify({ taskId: assignment._id })
+      });
+
+      if (response.ok) {
+        // Create blob and download
+        const blob = await response.blob();
+        
+        // Create a file from the blob for storage
+        const fileName = `review-document-${assignment.courseCode}-${assignment._id}.pdf`;
+        const file = new File([blob], fileName, { type: 'application/pdf' });
+        
+        // Store the review document in the documents system
+        await uploadReviewDocument(file, assignment);
+        
+        // Also trigger download for user
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showMessage('Review document generated and stored successfully!', 'success');
+      } else {
+        const errorData = await response.json();
+        showMessage(errorData.error || 'Failed to generate review document', 'error');
+      }
+    } catch (error) {
+      console.error('Error generating review document:', error);
+      showMessage('Failed to generate review document', 'error');
+    }
+  };
+
+  // Function to upload the generated review document to the documents system
+  const uploadReviewDocument = async (file, assignment) => {
+    try {
+      const formData = new FormData();
+      
+      // Add the PDF file
+      formData.append('file', file);
+      
+      // Add metadata for the review document
+      const year = new Date().getFullYear().toString();
+      const courseCode = assignment.courseCode || 'REVIEW';
+      const metadata = {
+        category: 'review-documents',
+        description: `Professional review document for task: ${assignment.title}`,
+        programme: assignment.programme || 'General',
+        docLevel: 'task-review', 
+        year: year,
+        courseCode: courseCode,
+        docType: 'Review Document',
+        uploadedBy: currentUser?.email || 'admin'
+      };
+      
+      // Add metadata to formData
+      Object.keys(metadata).forEach(key => {
+        formData.append(key, metadata[key]);
+      });
+      
+      const uploadResponse = await fetch('http://localhost:5000/api/files/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+        },
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to store review document');
+      }
+      
+      console.log('Review document stored successfully in documents system');
+      
+    } catch (error) {
+      console.error('Error storing review document:', error);
+      throw error;
+    }
+  };
+
   const handleReview = async (assignmentId, action, comment = '') => {
     console.log('Handle review called:', { assignmentId, action, comment });
     try {
@@ -907,12 +1000,101 @@ const TeachingAndLearning = () => {
                     {assignment.status === 'rejected' && (
                       <div className="status-message rejection">
                         Document rejected. Reason: {assignment.rejectionReason || 'No reason provided'}
+                        
+                        {/* Reupload section for rejected documents */}
+                        {canUploadFile(assignment) && (
+                          <div style={{ marginTop: '12px', padding: '12px', background: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '4px' }}>
+                            <p style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 'bold' }}>Reupload Document:</p>
+                            <input
+                              type="file"
+                              accept=".pdf,.doc,.docx"
+                              onChange={(e) => handleFileSelect(assignment._id, e.target.files[0])}
+                              style={{ marginBottom: '8px' }}
+                            />
+                            {selectedFiles[assignment._id] && (
+                              <div>
+                                <p style={{ margin: '4px 0', fontSize: '12px' }}>Selected: {selectedFiles[assignment._id].name}</p>
+                                <button
+                                  onClick={() => handleFileUpload(assignment._id)}
+                                  disabled={uploadingAssignmentId === assignment._id}
+                                  style={{
+                                    background: '#28a745',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '6px 12px',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '12px'
+                                  }}
+                                >
+                                  {uploadingAssignmentId === assignment._id ? 'Reuploading...' : 'Reupload Document'}
+                                </button>
+                              </div>
+                            )}
+                            {uploadStatus[assignment._id] && (
+                              <div style={{ 
+                                marginTop: '8px', 
+                                color: uploadStatus[assignment._id].includes('success') ? 'green' : 'red',
+                                fontSize: '12px'
+                              }}>
+                                {uploadStatus[assignment._id]}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                     
-                    {assignment.status === 'completed' && (
+                    {assignment.status === 'approved-by-admin' && (
                       <div className="status-message completed">
-                        Document completed and published for course {assignment.courseCode}
+                        <div style={{ 
+                          background: '#d4edda', 
+                          border: '1px solid #c3e6cb', 
+                          borderRadius: '8px', 
+                          padding: '16px',
+                          marginTop: '12px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '18px' }}>✅</span>
+                            <strong style={{ color: '#155724' }}>Task Completed</strong>
+                          </div>
+                          <p style={{ margin: '0 0 8px 0', color: '#155724', fontSize: '14px' }}>
+                            Document approved and published for course {assignment.courseCode}
+                          </p>
+                          <small style={{ color: '#6c757d' }}>
+                            Completed on: {new Date(assignment.updatedAt).toLocaleDateString()} at {new Date(assignment.updatedAt).toLocaleTimeString()}
+                          </small>
+                          
+                          {/* Generate Review Document Button - Only for admins */}
+                          {userRole === 'admin' && (
+                            <div style={{ marginTop: '12px' }}>
+                              <button
+                                onClick={() => handleGenerateReviewDocument(assignment)}
+                                style={{
+                                  background: '#007bff',
+                                  color: 'white',
+                                  border: 'none',
+                                  padding: '10px 16px',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px',
+                                  fontWeight: 'bold',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  boxShadow: '0 2px 4px rgba(0,123,255,0.3)'
+                                }}
+                                onMouseOver={(e) => e.target.style.background = '#0056b3'}
+                                onMouseOut={(e) => e.target.style.background = '#007bff'}
+                              >
+                                � Generate Review Document
+                              </button>
+                              <small style={{ display: 'block', marginTop: '4px', color: '#6c757d' }}>
+                                Generates a professional audit trail document
+                              </small>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

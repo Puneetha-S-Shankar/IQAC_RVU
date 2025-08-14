@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const NotificationContext = createContext();
+// Create and export the NotificationContext
+export const NotificationContext = createContext();
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
@@ -12,214 +14,388 @@ export const useNotifications = () => {
 };
 
 export const NotificationProvider = ({ children }) => {
-  const [notifications, setNotifications] = useState([]);
+  const { user, token } = useAuth();
   const navigate = useNavigate();
+  const [notifications, setNotifications] = useState({
+    new: [],
+    read: [],
+    all: []
+  });
+  const [counts, setCounts] = useState({
+    new: 0,
+    read: 0,
+    total: 0
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleNotificationClick = (notification) => {
-    // Mark as read
-    markAsRead(notification._id || notification.id);
-    
-    // Navigate to Teaching and Learning page for task-related notifications
-    if (notification.taskId || 
-        notification.type === 'task_assigned' || 
-        notification.type === 'file_submitted' || 
-        notification.type === 'file_approved' || 
-        notification.type === 'file_rejected' || 
-        notification.type === 'reviewer_approved') {
-      navigate('/teaching-and-learning');
-    }
-  };
-
-  const addNotification = (notification) => {
-    const id = Date.now().toString();
-    const newNotification = {
-      id,
-      ...notification,
-      timestamp: new Date(),
-      read: false
-    };
-    
-    setNotifications(prev => [newNotification, ...prev]);
-    
-    // Auto-remove notification after 5 seconds if it's not persistent
-    if (!notification.persistent) {
-      setTimeout(() => {
-        removeNotification(id);
-      }, 5000);
+  // Fetch notifications by category
+  const fetchNotifications = async (category = 'all') => {
+    if (!token || !user) {
+      console.log('NotificationContext: No token or user, skipping fetch');
+      return;
     }
     
-    return id;
-  };
-
-  const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(notif => (notif._id || notif.id) !== id));
-  };
-
-  const markAsRead = async (id) => {
-    // Update local state immediately for better UX
-    setNotifications(prev => 
-      prev.map(notif => 
-        (notif._id || notif.id) === id ? { ...notif, read: true, isRead: true } : notif
-      )
-    );
-
-    // Also update on server if it's a database notification
     try {
-      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      if (token && id && id.length === 24) { // Check if it's a MongoDB ObjectId
-        const response = await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          console.warn('Failed to mark notification as read on server');
-          // Revert local state if server update failed
-          setNotifications(prev => 
-            prev.map(notif => 
-              (notif._id || notif.id) === id ? { ...notif, read: false, isRead: false } : notif
-            )
-          );
-        }
-      }
-    } catch (error) {
-      console.error('Error marking notification as read on server:', error);
-      // Revert local state if server update failed
-      setNotifications(prev => 
-        prev.map(notif => 
-          (notif._id || notif.id) === id ? { ...notif, read: false, isRead: false } : notif
-        )
-      );
-    }
-  };
-
-  const clearAllNotifications = async () => {
-    // Update local state immediately
-    setNotifications([]);
-    
-    // Also clear on server
-    try {
-      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      if (token) {
-        const response = await fetch('http://localhost:5000/api/notifications/clear-all', {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          console.warn('Failed to clear notifications on server');
-          // Refresh from server to restore state
-          fetchNotifications();
-        }
-      }
-    } catch (error) {
-      console.error('Error clearing notifications on server:', error);
-      // Refresh from server to restore state
-      fetchNotifications();
-    }
-  };
-
-  const markAllAsRead = async () => {
-    // Update local state immediately
-    setNotifications(prev => 
-      prev.map(notif => ({ ...notif, read: true, isRead: true }))
-    );
-    
-    // Also update on server
-    try {
-      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      if (token) {
-        const response = await fetch(`http://localhost:5000/api/notifications/read-all`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          console.warn('Failed to mark all notifications as read on server');
-          // Refresh from server to restore correct state
-          fetchNotifications();
-        }
-      }
-    } catch (error) {
-      console.error('Error marking all notifications as read on server:', error);
-      // Refresh from server to restore correct state
-      fetchNotifications();
-    }
-  };
-
-  const getUnreadCount = () => {
-    return notifications.filter(notif => !(notif.read || notif.isRead)).length;
-  };
-
-  // Fetch notifications from server on mount
-  useEffect(() => {
-    fetchNotifications();
-    
-    // Set up global function for welcome notification
-    window.addWelcomeNotification = () => {
-      addNotification({
-        title: 'Welcome to IQAC Portal!',
-        message: 'You have successfully logged in to the IQAC system. Explore the features and manage your assignments.',
-        type: 'success',
-        persistent: true
-      });
+      setLoading(true);
+      setError(null);
       
-      // Add a sample assignment notification
-      setTimeout(() => {
-        addNotification({
-          title: 'New Assignment Available',
-          message: 'Course Document 1 has been assigned to you for review. Please check the assignments tab.',
-          type: 'assignment',
-          persistent: true
-        });
-      }, 2000);
-    };
-    
-    return () => {
-      delete window.addWelcomeNotification;
-    };
-  }, []);
+      // Enhanced debugging logs
+      console.log('🔍 NOTIFICATION FETCH DEBUG:');
+      console.log('   Token present:', !!token);
+      console.log('   Token preview:', token ? token.substring(0, 20) + '...' : 'null');
+      console.log('   User present:', !!user);
+      console.log('   User ID:', user._id || user.id);
+      console.log('   User info:', { 
+        id: user._id || user.id, 
+        username: user.username, 
+        email: user.email,
+        role: user.role
+      });
+      console.log('   Category:', category);
+      
+      let url = 'http://localhost:5000/api/notifications';
+      if (category === 'categorized') {
+        url += '/categorized';
+      } else if (category !== 'all') {
+        url += `?category=${category}`;
+      }
 
-  const fetchNotifications = async () => {
-    try {
-      // Get token from sessionStorage first, then localStorage
-      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      if (!token) return;
+      console.log('🌐 Making API request to:', url);
+      console.log('🔑 Authorization header:', token ? 'Bearer ' + token.substring(0, 20) + '...' : 'missing');
 
-      const response = await fetch('http://localhost:5000/api/notifications', {
+      const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
+
+      console.log('📡 API Response status:', response.status);
+      console.log('📡 API Response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Error details:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`Failed to fetch notifications: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('📦 Raw API data received:', data);
+      console.log('📊 Data type:', typeof data);
+      console.log('📊 Data length/keys:', Array.isArray(data) ? data.length : Object.keys(data));
       
+      if (category === 'categorized') {
+        const newNotifs = data.new || [];
+        const readNotifs = data.read || [];
+        const allNotifs = [...newNotifs, ...readNotifs];
+        
+        console.log('📂 Processing categorized data:', {
+          new: newNotifs.length,
+          read: readNotifs.length,
+          all: allNotifs.length
+        });
+        
+        // Log each notification's userId for comparison
+        console.log('📋 Notifications with userIds:');
+        allNotifs.forEach((notif, index) => {
+          console.log(`  ${index + 1}. "${notif.title}" - userId: ${notif.userId}, type: ${notif.type}`);
+        });
+        
+        setNotifications({
+          new: newNotifs,
+          read: readNotifs,
+          all: allNotifs
+        });
+        setCounts(data.counts || { new: newNotifs.length, read: readNotifs.length, total: allNotifs.length });
+      } else {
+        console.log('NotificationContext: Setting single category notifications:', category, data.length);
+        if (category === 'new') {
+          setNotifications(prev => ({ ...prev, new: data }));
+        } else if (category === 'read') {
+          setNotifications(prev => ({ ...prev, read: data }));
+        } else {
+          setNotifications(prev => ({ ...prev, all: data }));
+        }
+      }
+    } catch (error) {
+      console.error('NotificationContext: Error fetching notifications:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch notification counts
+  const fetchCounts = async () => {
+    if (!token || !user) return;
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/notifications/counts', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data);
+        setCounts(data);
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('Error fetching notification counts:', error);
     }
   };
+
+  // Click notification (mark as read and navigate)
+  const clickNotification = async (notificationId) => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`http://localhost:5000/api/notifications/${notificationId}/click`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Find the current notification to check if it's already read
+        const currentNotification = notifications.all.find(n => n._id === notificationId);
+        
+        if (currentNotification && !currentNotification.isRead) {
+          // Only update state if the notification was previously unread
+          const updatedNotification = data.notification;
+          
+          setNotifications(prev => ({
+            new: prev.new.filter(n => n._id !== notificationId),
+            read: [updatedNotification, ...prev.read],
+            all: prev.all.map(n => n._id === notificationId ? updatedNotification : n)
+          }));
+          
+          // Update counts only if notification was unread
+          setCounts(prev => ({
+            ...prev,
+            new: Math.max(0, prev.new - 1),
+            read: prev.read + 1
+          }));
+        }
+        
+        // Navigate to the appropriate page regardless of read status
+        if (data.navigationUrl) {
+          navigate(data.navigationUrl);
+        }
+        
+        return data;
+      }
+    } catch (error) {
+      console.error('Error clicking notification:', error);
+      setError(error.message);
+    }
+  };
+
+  // Mark notification as read without navigation
+  const markAsRead = async (notificationId) => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update local state
+        setNotifications(prev => {
+          const updatedNotification = data.notification;
+          return {
+            new: prev.new.filter(n => n._id !== notificationId),
+            read: [updatedNotification, ...prev.read],
+            all: prev.all.map(n => n._id === notificationId ? updatedNotification : n)
+          };
+        });
+        
+        // Update counts
+        setCounts(prev => ({
+          ...prev,
+          new: Math.max(0, prev.new - 1),
+          read: prev.read + 1
+        }));
+        
+        return data;
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      setError(error.message);
+    }
+  };
+
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/notifications/read-all', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        // Move all new notifications to read
+        setNotifications(prev => ({
+          new: [],
+          read: [...prev.new, ...prev.read],
+          all: prev.all.map(n => ({ ...n, isRead: true }))
+        }));
+        
+        // Update counts
+        setCounts(prev => ({
+          new: 0,
+          read: prev.total,
+          total: prev.total
+        }));
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      setError(error.message);
+    }
+  };
+
+  // Clear all notifications
+  const clearAllNotifications = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/notifications/clear-all', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setNotifications({ new: [], read: [], all: [] });
+        setCounts({ new: 0, read: 0, total: 0 });
+      }
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      setError(error.message);
+    }
+  };
+
+  // Delete specific notification
+  const deleteNotification = async (notificationId) => {
+    if (!token) {
+      console.error('❌ No token available for delete');
+      return;
+    }
+    
+    console.log('🔍 Deleting notification:', notificationId);
+    console.log('🔍 Current notifications state:', {
+      new: notifications.new?.length,
+      read: notifications.read?.length,
+      all: notifications.all?.length
+    });
+    
+    try {
+      const response = await fetch(`http://localhost:5000/api/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        // Check if notification was in new list before deleting
+        const wasNew = notifications.new.some(n => n._id === notificationId);
+        console.log('🔍 Was notification new?', wasNew);
+        
+        setNotifications(prev => ({
+          new: prev.new.filter(n => n._id !== notificationId),
+          read: prev.read.filter(n => n._id !== notificationId),
+          all: prev.all.filter(n => n._id !== notificationId)
+        }));
+        
+        setCounts(prev => ({
+          new: prev.new - (wasNew ? 1 : 0),
+          read: prev.read - (wasNew ? 0 : 1),
+          total: prev.total - 1
+        }));
+        
+        console.log('✅ Notification deleted successfully');
+      } else {
+        console.error('❌ Failed to delete notification:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      setError(error.message);
+    }
+  };
+
+  // Initial load and periodic refresh
+  useEffect(() => {
+    console.log('🔄 NotificationContext useEffect triggered');
+    console.log('   User:', user);
+    console.log('   Token:', !!token);
+    console.log('   Both present:', !!(user && token));
+    
+    if (user && token) {
+      console.log('✅ Both user and token present, fetching notifications...');
+      fetchNotifications('categorized');
+      fetchCounts();
+      
+      // Refresh every 30 seconds
+      const interval = setInterval(() => {
+        fetchCounts();
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    } else {
+      console.log('❌ Missing user or token, skipping notification fetch');
+    }
+  }, [user, token]);
+
+  // Helper function for backward compatibility
+  const getUnreadCount = () => counts.new;
 
   const value = {
     notifications,
-    addNotification,
-    removeNotification,
+    counts,
+    loading,
+    error,
+    fetchNotifications,
+    fetchCounts,
+    clickNotification,
     markAsRead,
     markAllAsRead,
     clearAllNotifications,
+    deleteNotification,
+    // Helper functions
     getUnreadCount,
-    fetchNotifications,
-    handleNotificationClick
+    // Helper getters
+    newNotifications: notifications.new,
+    readNotifications: notifications.read,
+    allNotifications: notifications.all,
+    unreadCount: counts.new,
+    readCount: counts.read,
+    totalCount: counts.total
   };
 
   return (
@@ -229,5 +405,5 @@ export const NotificationProvider = ({ children }) => {
   );
 };
 
-export { NotificationContext };
+// Default export for easier importing
 export default NotificationProvider;

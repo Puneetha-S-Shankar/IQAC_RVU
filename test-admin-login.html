@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Login Test</title>
+</head>
+<body>
+    <h1>Admin Login & Notification Test</h1>
+    <p>Open Developer Console (F12) to see results</p>
+    
+    <script>
+// Simple test to check admin login and notifications
+console.log('🧪 Testing Admin Login & Notifications');
+
+// Step 1: Login as admin
+async function testAdminLogin() {
+    try {
+        console.log('📝 Step 1: Logging in as admin...');
+        
+        const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: 'admin@iqac.com',
+                password: 'admin123'  // Common admin password
+            })
+        });
+        
+        console.log('🔐 Login response status:', loginResponse.status);
+        
+        if (!loginResponse.ok) {
+            const errorText = await loginResponse.text();
+            console.log('❌ Login failed:', errorText);
+            return null;
+        }
+        
+        const loginData = await loginResponse.json();
+        console.log('✅ Login successful!');
+        console.log('👤 User data:', {
+            id: loginData.user?._id,
+            username: loginData.user?.username,
+            email: loginData.user?.email,
+            role: loginData.user?.role
+        });
+        console.log('🎫 Token preview:', loginData.token?.substring(0, 20) + '...');
+        
+        return loginData;
+        
+    } catch (error) {
+        console.error('❌ Login error:', error);
+        return null;
+    }
+}
+
+// Step 2: Fetch notifications
+async function testNotifications(token) {
+    try {
+        console.log('\n📝 Step 2: Fetching notifications...');
+        
+        const notifResponse = await fetch('http://localhost:5000/api/notifications/categorized', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('📡 Notifications response status:', notifResponse.status);
+        
+        if (!notifResponse.ok) {
+            const errorText = await notifResponse.text();
+            console.log('❌ Notifications fetch failed:', errorText);
+            return;
+        }
+        
+        const notifData = await notifResponse.json();
+        console.log('📦 Notifications data:', notifData);
+        console.log('📊 Summary:', {
+            newCount: notifData.new?.length || 0,
+            readCount: notifData.read?.length || 0,
+            totalCount: (notifData.new?.length || 0) + (notifData.read?.length || 0)
+        });
+        
+        if (notifData.new?.length > 0) {
+            console.log('🔔 First new notification:', notifData.new[0]);
+        }
+        
+    } catch (error) {
+        console.error('❌ Notifications fetch error:', error);
+    }
+}
+
+// Run the test
+async function runTest() {
+    const loginData = await testAdminLogin();
+    if (loginData && loginData.token) {
+        await testNotifications(loginData.token);
+    }
+}
+
+runTest();
+    </script>
+</body>
+</html>
