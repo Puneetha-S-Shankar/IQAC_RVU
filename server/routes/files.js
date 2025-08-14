@@ -117,8 +117,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         return res.status(403).json({ error: 'Not authorized to upload for this assignment' });
       }
       
-      if (assignment.status !== 'assigned') {
-        return res.status(400).json({ error: 'Assignment is not in a state that allows file upload' });
+      if (assignment.status !== 'assigned' && assignment.status !== 'rejected') {
+        return res.status(400).json({ 
+          error: `Assignment status '${assignment.status}' does not allow file upload. Only 'assigned' and 'rejected' assignments can receive file uploads.` 
+        });
       }
       
       // Check for existing file for this assignment and delete it
@@ -185,12 +187,19 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       
       uploadStream.on('finish', async () => {
         try {
-          // Update assignment status to 'file-uploaded'
-          await Task.findByIdAndUpdate(assignmentId, { 
+          // Update assignment status to 'file-uploaded' and clear rejection data
+          const updateData = { 
             status: 'file-uploaded',
             fileId: uploadStream.id,
             fileUploadDate: new Date()
-          });
+          };
+          
+          // Clear rejection reason if this is a reupload of a rejected assignment
+          if (assignment.status === 'rejected') {
+            updateData.rejectionReason = undefined;
+          }
+          
+          await Task.findByIdAndUpdate(assignmentId, updateData);
           
           res.json({
             message: 'File uploaded successfully',

@@ -219,8 +219,8 @@ const TeachingAndLearning = () => {
       isInitiator = assignment.assignedToInitiator.email === currentUser.email;
     }
     
-    // Check if assignment is in correct status
-    const canUpload = assignment.status === 'assigned';
+    // Check if assignment is in correct status (assigned or rejected for reupload)
+    const canUpload = assignment.status === 'assigned' || assignment.status === 'rejected';
     
     // Check if deadline hasn't passed
     const notOverdue = !isOverdue(assignment.deadline);
@@ -871,27 +871,89 @@ const TeachingAndLearning = () => {
                     </div>
                   )}
 
-                  {/* File Upload Section - Only for initiators */}
+                  {/* File Upload Section - Only for initiators (initial upload or reupload) */}
                   {canUploadFile(assignment) && (
-                    <div className="upload-section">
-                      <h4>Upload Course Document</h4>
-                      <div className="file-upload-area">
+                    <div className="upload-section" style={{
+                      background: '#182E37',
+                      border: '2px solid #D5AB5D',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      marginTop: '12px'
+                    }}>
+                      <h4 style={{ color: '#D5AB5D', marginBottom: '12px' }}>
+                        {assignment.status === 'rejected' ? 'Reupload Course Document' : 'Upload Course Document'}
+                      </h4>
+                      {assignment.status === 'rejected' && (
+                        <div style={{ 
+                          background: '#D5AB5D', 
+                          color: '#182E37', 
+                          padding: '12px', 
+                          borderRadius: '6px', 
+                          marginBottom: '12px',
+                          fontWeight: 'bold'
+                        }}>
+                          <strong>Rejection Reason:</strong> {assignment.rejectionReason || 'No reason provided'}
+                          <br />
+                          <small style={{ fontWeight: 'normal', marginTop: '4px', display: 'block' }}>
+                            Please upload a revised document addressing the feedback above.
+                          </small>
+                        </div>
+                      )}
+                      <div className="file-upload-area" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <input
                           type="file"
                           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
                           onChange={(e) => handleFileSelect(assignment._id, e.target.files[0])}
                           disabled={uploadingAssignmentId === assignment._id}
+                          style={{ 
+                            border: '2px solid #D5AB5D',
+                            borderRadius: '4px',
+                            padding: '10px',
+                            background: '#fff',
+                            color: '#182E37',
+                            fontSize: '14px'
+                          }}
                         />
+                        {selectedFiles[assignment._id] && (
+                          <div style={{ 
+                            color: '#D5AB5D', 
+                            fontSize: '14px',
+                            padding: '8px',
+                            background: 'rgba(213,171,93,0.1)',
+                            borderRadius: '4px'
+                          }}>
+                            <strong>Selected:</strong> {selectedFiles[assignment._id].name}
+                          </div>
+                        )}
                         <button
                           className="upload-btn"
                           onClick={() => handleFileUpload(assignment._id)}
                           disabled={!selectedFiles[assignment._id] || uploadingAssignmentId === assignment._id}
+                          style={{
+                            background: selectedFiles[assignment._id] ? '#D5AB5D' : '#666',
+                            color: '#182E37',
+                            border: '2px solid #D5AB5D',
+                            padding: '12px 20px',
+                            borderRadius: '6px',
+                            cursor: selectedFiles[assignment._id] ? 'pointer' : 'not-allowed',
+                            fontWeight: 'bold',
+                            fontSize: '14px',
+                            transition: 'all 0.3s ease'
+                          }}
                         >
-                          {uploadingAssignmentId === assignment._id ? 'Uploading...' : 'Upload Document'}
+                          {uploadingAssignmentId === assignment._id ? 'Uploading...' : 
+                           assignment.status === 'rejected' ? 'Reupload Document' : 'Upload Document'}
                         </button>
                       </div>
                       {uploadStatus[assignment._id] && (
-                        <div className={`upload-status ${uploadStatus[assignment._id].toLowerCase()}`}>
+                        <div className={`upload-status ${uploadStatus[assignment._id].toLowerCase()}`} style={{
+                          color: uploadStatus[assignment._id].includes('success') ? '#D5AB5D' : '#ff6b6b',
+                          marginTop: '12px',
+                          fontWeight: 'bold',
+                          padding: '8px',
+                          borderRadius: '4px',
+                          background: 'rgba(255,255,255,0.1)'
+                        }}>
                           {uploadStatus[assignment._id]}
                         </div>
                       )}
@@ -997,51 +1059,21 @@ const TeachingAndLearning = () => {
                       </div>
                     )}
                     
-                    {assignment.status === 'rejected' && (
-                      <div className="status-message rejection">
-                        Document rejected. Reason: {assignment.rejectionReason || 'No reason provided'}
-                        
-                        {/* Reupload section for rejected documents */}
-                        {canUploadFile(assignment) && (
-                          <div style={{ marginTop: '12px', padding: '12px', background: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '4px' }}>
-                            <p style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 'bold' }}>Reupload Document:</p>
-                            <input
-                              type="file"
-                              accept=".pdf,.doc,.docx"
-                              onChange={(e) => handleFileSelect(assignment._id, e.target.files[0])}
-                              style={{ marginBottom: '8px' }}
-                            />
-                            {selectedFiles[assignment._id] && (
-                              <div>
-                                <p style={{ margin: '4px 0', fontSize: '12px' }}>Selected: {selectedFiles[assignment._id].name}</p>
-                                <button
-                                  onClick={() => handleFileUpload(assignment._id)}
-                                  disabled={uploadingAssignmentId === assignment._id}
-                                  style={{
-                                    background: '#28a745',
-                                    color: 'white',
-                                    border: 'none',
-                                    padding: '6px 12px',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '12px'
-                                  }}
-                                >
-                                  {uploadingAssignmentId === assignment._id ? 'Reuploading...' : 'Reupload Document'}
-                                </button>
-                              </div>
-                            )}
-                            {uploadStatus[assignment._id] && (
-                              <div style={{ 
-                                marginTop: '8px', 
-                                color: uploadStatus[assignment._id].includes('success') ? 'green' : 'red',
-                                fontSize: '12px'
-                              }}>
-                                {uploadStatus[assignment._id]}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                    {assignment.status === 'rejected' && !canUploadFile(assignment) && (
+                      <div className="status-message rejection" style={{
+                        background: '#182E37',
+                        border: '2px solid #D5AB5D',
+                        borderRadius: '8px',
+                        padding: '16px',
+                        color: '#D5AB5D'
+                      }}>
+                        <strong style={{ color: '#D5AB5D' }}>Document Rejected</strong>
+                        <br />
+                        <span style={{ color: '#fff' }}>Reason: {assignment.rejectionReason || 'No reason provided'}</span>
+                        <br />
+                        <small style={{ color: '#D5AB5D', marginTop: '8px', display: 'block' }}>
+                          Please contact the initiator to reupload a revised document.
+                        </small>
                       </div>
                     )}
                     
@@ -1071,26 +1103,33 @@ const TeachingAndLearning = () => {
                               <button
                                 onClick={() => handleGenerateReviewDocument(assignment)}
                                 style={{
-                                  background: '#007bff',
-                                  color: 'white',
-                                  border: 'none',
-                                  padding: '10px 16px',
-                                  borderRadius: '6px',
+                                  background: '#D5AB5D',
+                                  color: '#182E37',
+                                  border: '2px solid #D5AB5D',
+                                  padding: '12px 20px',
+                                  borderRadius: '8px',
                                   cursor: 'pointer',
                                   fontSize: '14px',
                                   fontWeight: 'bold',
                                   display: 'flex',
                                   alignItems: 'center',
                                   gap: '8px',
-                                  boxShadow: '0 2px 4px rgba(0,123,255,0.3)'
+                                  boxShadow: '0 3px 6px rgba(213,171,93,0.3)',
+                                  transition: 'all 0.3s ease'
                                 }}
-                                onMouseOver={(e) => e.target.style.background = '#0056b3'}
-                                onMouseOut={(e) => e.target.style.background = '#007bff'}
+                                onMouseOver={(e) => {
+                                  e.target.style.background = '#182E37';
+                                  e.target.style.color = '#D5AB5D';
+                                }}
+                                onMouseOut={(e) => {
+                                  e.target.style.background = '#D5AB5D';
+                                  e.target.style.color = '#182E37';
+                                }}
                               >
-                                � Generate Review Document
+                                📄 Generate Review Document
                               </button>
-                              <small style={{ display: 'block', marginTop: '4px', color: '#6c757d' }}>
-                                Generates a professional audit trail document
+                              <small style={{ display: 'block', marginTop: '6px', color: '#155724', fontStyle: 'italic' }}>
+                                Generates a professional audit trail document with complete task history
                               </small>
                             </div>
                           )}

@@ -238,7 +238,7 @@ const ProgramPage = ({ aboutTexts }) => {
         docLevel: info?.doc ? "course" : "programme",
         year: info?.year,
         batch: info?.batch,
-        semester: info?.batch,
+        semester: info?.semester || info?.batch,
         courseCode: info?.courseCode || "",
         docType: info?.doc || ""
       };
@@ -268,7 +268,7 @@ const ProgramPage = ({ aboutTexts }) => {
       docLevel: docInfo?.doc ? "course" : "programme",
       year: docInfo?.year,
       batch: docInfo?.batch,
-      semester: docInfo?.batch, // Always set semester to batch value
+      semester: docInfo?.semester || docInfo?.batch, // Use semester if available, fallback to batch
       courseCode: docInfo?.courseCode || "",
       docType: docInfo?.doc || ""
     };
@@ -298,11 +298,7 @@ const ProgramPage = ({ aboutTexts }) => {
       const response = await fetch("http://localhost:5000/api/files/upload", {
         method: "POST",
         headers: {
-<<<<<<< HEAD
           'Authorization': `Bearer ${token}`
-=======
-          'Authorization': `Bearer ${getToken()}`
->>>>>>> b01ead78a98ae17dd82a18fb98333d40391d44c9
         },
         body: formData,
       });
@@ -331,16 +327,10 @@ const ProgramPage = ({ aboutTexts }) => {
     const meta = getFileMetadata();
     const params = new URLSearchParams(meta);
     try {
-<<<<<<< HEAD
       const token = getToken();
       const response = await fetch(`http://localhost:5000/api/files?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`
-=======
-      const response = await fetch(`http://localhost:5000/api/files?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${getToken()}`
->>>>>>> b01ead78a98ae17dd82a18fb98333d40391d44c9
         }
       });
       const data = await response.json();

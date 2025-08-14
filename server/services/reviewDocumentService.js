@@ -21,7 +21,7 @@ class ReviewDocumentService {
         .populate('assignedToInitiators')
         .populate('assignedToReviewer')
         .populate('assignedToReviewers')
-        .populate('adminApprover');
+        .populate('assignedBy');
 
       if (!task) {
         throw new Error('Task not found');
@@ -190,10 +190,10 @@ class ReviewDocumentService {
     doc.moveDown(0.3);
 
     // Admin Approver
-    if (task.adminApprover) {
+    if (task.assignedBy) {
       doc.font('Helvetica-Bold').text('Final Approver:');
       doc.font('Helvetica')
-         .text(`• ${task.adminApprover.name} (${task.adminApprover.email})`, { indent: 20 });
+         .text(`• ${task.assignedBy.firstName} ${task.assignedBy.lastName} (${task.assignedBy.email})`, { indent: 20 });
     }
     
     doc.moveDown(0.5);
@@ -291,9 +291,9 @@ class ReviewDocumentService {
     doc.fontSize(11)
        .font('Helvetica');
 
-    if (task.adminApprover) {
-      doc.text(`Approved by: ${task.adminApprover.name}`);
-      doc.text(`Email: ${task.adminApprover.email}`);
+    if (task.assignedBy) {
+      doc.text(`Approved by: ${task.assignedBy.firstName} ${task.assignedBy.lastName}`);
+      doc.text(`Email: ${task.assignedBy.email}`);
       doc.text(`Date: ${new Date(task.updatedAt).toLocaleDateString()} ${new Date(task.updatedAt).toLocaleTimeString()}`);
       doc.text(`Status: COMPLETED`);
     } else {
