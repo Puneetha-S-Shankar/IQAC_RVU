@@ -73,7 +73,7 @@ const Navbar = () => {
   };
 
   const linkStyle = {
-    color: "#FFD700",
+    color: "#c5a806ff",
     marginLeft: "2rem",
     textDecoration: "none",
     fontWeight: "bold",
@@ -85,7 +85,7 @@ const Navbar = () => {
   };
 
   const linkHoverStyle = {
-    textShadow: "0 0 6px rgba(255, 215, 0, 0.5)",
+    textShadow: "0 0 6px rgba(212, 182, 10, 0.5)",
     transform: "scale(1.05)",
   };
 
@@ -122,7 +122,7 @@ const Navbar = () => {
         <Link to="/" style={{
           fontSize: "1.4rem",
           fontWeight: "bold",
-          color: "#FFD700",
+          color: "#ae950bff",
           letterSpacing: "1px",
           textDecoration: "none"
         }}>
@@ -195,7 +195,7 @@ const Navbar = () => {
             top: 70px;
             right: 20px;
             background: white;
-            border: 2px solid #ffd700;
+            border: 2px solid #7d6e18ff;
             border-radius: 8px;
             padding: 15px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);

@@ -2,6 +2,19 @@ import React, { useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import { AuthContext } from "../context/AuthContext";
+import { 
+  FaBullseye, 
+  FaBook, 
+  FaGraduationCap, 
+  FaCog,
+  FaBookOpen,
+  FaChalkboardTeacher,
+  FaMicroscope,
+  FaBuilding,
+  FaUsers,
+  FaUniversity,
+  FaStar
+} from "react-icons/fa";
 
 const criteria = [
   "Curriculum ",
@@ -75,7 +88,9 @@ export default function Dashboard() {
         <div className="dashboard-card">
           <div className="dashboard-image-placeholder">
             <div className="placeholder-content">
-              <div className="placeholder-icon">🎯</div>
+              <div className="placeholder-icon">
+                <FaBullseye style={{ color: '#D5AB5D', fontSize: '2.5rem' }} />
+              </div>
               <div className="placeholder-text">MISSION</div>
               <div className="placeholder-subtext">Excellence in Education</div>
             </div>
@@ -85,7 +100,9 @@ export default function Dashboard() {
         <div className="dashboard-card">
           <div className="dashboard-image-placeholder">
             <div className="placeholder-content">
-              <div className="placeholder-icon">📚</div>
+              <div className="placeholder-icon">
+                <FaBook style={{ color: '#D5AB5D', fontSize: '2.5rem' }} />
+              </div>
               <div className="placeholder-text">OUTCOMES</div>
               <div className="placeholder-subtext">Student Success</div>
             </div>
@@ -95,7 +112,9 @@ export default function Dashboard() {
         <div className="dashboard-card">
           <div className="dashboard-image-placeholder">
             <div className="placeholder-content">
-              <div className="placeholder-icon">🎓</div>
+              <div className="placeholder-icon">
+                <FaGraduationCap style={{ color: '#D5AB5D', fontSize: '2.5rem' }} />
+              </div>
               <div className="placeholder-text">OBJECTIVES</div>
               <div className="placeholder-subtext">Academic Goals</div>
             </div>
@@ -112,7 +131,9 @@ export default function Dashboard() {
               style={{ cursor: "pointer" }}
             >
               <div className="placeholder-content">
-                <div className="placeholder-icon">⚙️</div>
+                <div className="placeholder-icon">
+                  <FaCog style={{ color: '#D5AB5D', fontSize: '2.5rem' }} />
+                </div>
                 <div className="placeholder-text">ADMIN</div>
                 <div className="placeholder-subtext">Role Control</div>
               </div>
@@ -142,7 +163,9 @@ export default function Dashboard() {
         >
           <div className="dashboard-image-placeholder">
             <div className="placeholder-content">
-              <div className="placeholder-icon">📖</div>
+              <div className="placeholder-icon">
+                <FaBookOpen style={{ color: '#D5AB5D', fontSize: '2.5rem' }} />
+              </div>
               <div className="placeholder-text">CURRICULUM</div>
               <div className="placeholder-subtext">Course Design</div>
             </div>
@@ -161,7 +184,9 @@ export default function Dashboard() {
           >
             <div className="dashboard-image-placeholder">
               <div className="placeholder-content">
-                <div className="placeholder-icon">👨‍🏫</div>
+                <div className="placeholder-icon">
+                  <FaChalkboardTeacher style={{ color: '#D5AB5D', fontSize: '2.5rem' }} />
+                </div>
                 <div className="placeholder-text">TEACHING</div>
                 <div className="placeholder-subtext">Learning Methods</div>
               </div>
@@ -179,7 +204,9 @@ export default function Dashboard() {
         >
           <div className="dashboard-image-placeholder">
             <div className="placeholder-content">
-              <div className="placeholder-icon">🔬</div>
+              <div className="placeholder-icon">
+                <FaMicroscope style={{ color: '#D5AB5D', fontSize: '2.5rem' }} />
+              </div>
               <div className="placeholder-text">RESEARCH</div>
               <div className="placeholder-subtext">Innovation</div>
             </div>
@@ -195,7 +222,9 @@ export default function Dashboard() {
         >
           <div className="dashboard-image-placeholder">
             <div className="placeholder-content">
-              <div className="placeholder-icon">🏢</div>
+              <div className="placeholder-icon">
+                <FaBuilding style={{ color: '#D5AB5D', fontSize: '2.5rem' }} />
+              </div>
               <div className="placeholder-text">INFRASTRUCTURE</div>
               <div className="placeholder-subtext">Facilities</div>
             </div>
@@ -213,7 +242,9 @@ export default function Dashboard() {
         >
           <div className="dashboard-image-placeholder">
             <div className="placeholder-content">
-              <div className="placeholder-icon">👥</div>
+              <div className="placeholder-icon">
+                <FaUsers style={{ color: '#D5AB5D', fontSize: '2.5rem' }} />
+              </div>
               <div className="placeholder-text">STUDENT SUPPORT</div>
               <div className="placeholder-subtext">Guidance</div>
             </div>
@@ -229,7 +260,9 @@ export default function Dashboard() {
         >
           <div className="dashboard-image-placeholder">
             <div className="placeholder-content">
-              <div className="placeholder-icon">🏛️</div>
+              <div className="placeholder-icon">
+                <FaUniversity style={{ color: '#D5AB5D', fontSize: '2.5rem' }} />
+              </div>
               <div className="placeholder-text">GOVERNANCE</div>
               <div className="placeholder-subtext">Leadership</div>
             </div>
@@ -245,7 +278,9 @@ export default function Dashboard() {
         >
           <div className="dashboard-image-placeholder">
             <div className="placeholder-content">
-              <div className="placeholder-icon">⭐</div>
+              <div className="placeholder-icon">
+                <FaStar style={{ color: '#D5AB5D', fontSize: '2.5rem' }} />
+              </div>
               <div className="placeholder-text">VALUES</div>
               <div className="placeholder-subtext">Best Practices</div>
             </div>

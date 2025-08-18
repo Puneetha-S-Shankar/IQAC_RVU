@@ -533,3 +533,39 @@ html, body {
 .criteria-card:nth-child(2) { animation-delay: 0.15s; }
 .criteria-card:nth-child(3) { animation-delay: 0.3s; }
 .criteria-card:nth-child(4) { animation-delay: 0.45s; }
+/* Add these lines to your existing Dashboard.css file */
+
+/* Golden icon styling */
+.placeholder-icon {
+  color: #D5AB5D !important;
+  text-shadow: 
+    0 2px 4px rgba(213, 171, 93, 0.6),
+    0 0 8px rgba(213, 171, 93, 0.4);
+  transition: all 0.3s ease;
+}
+
+/* Enhanced golden glow on hover */
+.dashboard-card:hover .placeholder-icon,
+.criteria-card:hover .placeholder-icon {
+  color: #E6C478 !important;
+  text-shadow: 
+    0 2px 6px rgba(213, 171, 93, 0.8),
+    0 0 12px rgba(213, 171, 93, 0.6),
+    0 0 20px rgba(213, 171, 93, 0.3);
+  transform: scale(1.05);
+}
+
+/* If using React Icons instead of emojis, this will style them too */
+.placeholder-icon svg {
+  color: #D5AB5D !important;
+  filter: drop-shadow(0 2px 4px rgba(213, 171, 93, 0.4));
+}
+.placeholder-icon svg {
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover .placeholder-icon svg {
+  color: #E6C478 !important;
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 8px rgba(213, 171, 93, 0.6));
+}

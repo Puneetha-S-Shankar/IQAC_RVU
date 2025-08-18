@@ -246,7 +246,7 @@
   background: linear-gradient(145deg, 
     rgba(36, 61, 74, 0.9), 
     rgba(26, 51, 65, 0.95));
-  color: #f8fafc;
+  color: #e6ecf2;
   border: 1px solid rgba(213, 171, 93, 0.4);
   border-radius: 8px;
   padding: 14px 0;
@@ -288,7 +288,7 @@
   background: linear-gradient(145deg, 
     rgba(42, 69, 82, 0.95), 
     rgba(36, 61, 74, 0.98));
-  color: #ffffff;
+  color: #eef3f8;
   transform: translateY(-2px);
   box-shadow: 
     0 8px 25px rgba(0, 0, 0, 0.3),
@@ -360,7 +360,7 @@
 }
 
 .dropdown-label {
-  color: #e2e8f0;
+  color: #ffffff;
   font-size: 1.08rem;
   font-weight: 600;
   margin-bottom: 10px;
@@ -376,7 +376,7 @@
   background: linear-gradient(145deg, 
     rgba(24, 46, 55, 0.9), 
     rgba(18, 35, 42, 0.95));
-  color: #f8fafc;
+  color: #93780d;
   font-size: 1rem;
   font-family: 'Segoe UI', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
   outline: none;
@@ -384,7 +384,7 @@
   box-shadow: 
     0 2px 8px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(30px);
 }
 
 .program-nested-dropdown select:focus {
@@ -449,7 +449,7 @@
   background: linear-gradient(145deg, 
     rgba(42, 69, 82, 0.95), 
     rgba(36, 61, 74, 0.98));
-  color: #ffffff;
+  color: #112b4e;
   transform: translateY(-2px);
   box-shadow: 
     0 8px 25px rgba(0, 0, 0, 0.3),
@@ -469,7 +469,7 @@
   background: linear-gradient(145deg, 
     rgba(36, 61, 74, 0.9), 
     rgba(26, 51, 65, 0.95));
-  color: #f8fafc;
+  color: #13304d;
   border: 1px solid rgba(213, 171, 93, 0.4);
   border-radius: 8px;
   padding: 12px 24px;
@@ -512,7 +512,7 @@
   background: linear-gradient(145deg, 
     rgba(42, 69, 82, 0.95), 
     rgba(36, 61, 74, 0.98));
-  color: #ffffff;
+  color: #13344a;
   transform: translateY(-2px);
   box-shadow: 
     0 8px 25px rgba(0, 0, 0, 0.3),
@@ -539,7 +539,7 @@
   cursor: pointer;
   margin-bottom: 12px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: #cbd5e1;
+  color: #0d2849;
   font-size: 1rem;
 }
 
