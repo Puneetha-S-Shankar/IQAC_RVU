@@ -118,9 +118,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       }
       
       if (assignment.status !== 'assigned' && assignment.status !== 'rejected') {
-        return res.status(400).json({ 
-          error: `Assignment status '${assignment.status}' does not allow file upload. Only 'assigned' and 'rejected' assignments can receive file uploads.` 
-        });
+        return res.status(400).json({ error: 'Assignment is not in a state that allows file upload' });
       }
       
       // Check for existing file for this assignment and delete it
